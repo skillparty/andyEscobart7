@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Papel cálido + tinta: dirección editorial, no gris genérico */
+  --color-paper: oklch(96.8% 0.012 85);
+  --color-card: oklch(99.2% 0.005 90);
+  --color-ink: oklch(24% 0.025 55);
+  --color-ink-soft: oklch(48% 0.02 55);
+  --color-line: oklch(87% 0.018 80);
+
+  /* Color semántico por tipo de dinero */
+  --color-positive: oklch(50% 0.11 160);
+  --color-positive-soft: oklch(94% 0.035 160);
+  --color-claim: oklch(58% 0.12 70);
+  --color-claim-soft: oklch(94.5% 0.045 80);
+  --color-debt: oklch(52% 0.15 30);
+  --color-debt-soft: oklch(94.5% 0.03 30);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html,
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+  }
+
+  ::selection {
+    background: oklch(85% 0.06 80);
+  }
+}
+
+@layer utilities {
+  /* Línea punteada de libreta contable entre concepto y monto */
+  .ledger-dots {
+    flex: 1;
+    border-bottom: 2px dotted var(--color-line);
+    transform: translateY(-0.3em);
+    margin-inline: 0.6rem;
+    min-width: 1.5rem;
+  }
+
+  .rise-in {
+    animation: rise-in 0.5s var(--ease-out-expo) both;
+  }
+
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise-in {
+      animation: none;
+    }
+  }
+}
