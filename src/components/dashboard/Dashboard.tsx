@@ -1,9 +1,13 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
+import { useState } from "react";
 import { TONE_CLASSES, type Tone } from "~/components/ui/tones";
 import { formatMoney } from "~/lib/money";
+import { exportPdf } from "~/lib/pdf";
 import { api } from "../../../convex/_generated/api";
 import { AccountsSection } from "./AccountsSection";
+import { ChartsSection } from "./ChartsSection";
+import { HistorySection } from "./HistorySection";
 import { PayablesSection } from "./PayablesSection";
 import { ReceivablesSection } from "./ReceivablesSection";
 
@@ -13,20 +17,26 @@ export function Dashboard() {
   const accounts = useQuery(api.accounts.list);
   const receivables = useQuery(api.receivables.list);
   const payables = useQuery(api.payables.list);
+  const transactions = useQuery(api.transactions.list);
 
-  const totalAccounts = (accounts ?? []).reduce(
-    (sum, account) => sum + account.balance,
-    0,
-  );
-  const totalReceivable = (receivables ?? []).reduce(
-    (sum, item) => sum + item.amount,
-    0,
-  );
-  const totalPayable = (payables ?? []).reduce(
-    (sum, item) => sum + item.amount,
-    0,
-  );
+  const [isExporting, setIsExporting] = useState(false);
+
+  const totalAccounts = (accounts ?? []).reduce((sum, a) => sum + a.balance, 0);
+  const totalReceivable = (receivables ?? []).reduce((sum, r) => sum + r.amount, 0);
+  const totalPayable = (payables ?? []).reduce((sum, p) => sum + p.amount, 0);
   const netBalance = totalAccounts + totalReceivable - totalPayable;
+
+  const monthlyData = buildMonthlyData(transactions ?? []);
+
+  const handleExport = async (period: "weekly" | "monthly") => {
+    if (!accounts || !receivables || !payables || !transactions) return;
+    setIsExporting(true);
+    try {
+      await exportPdf({ accounts, receivables, payables, transactions, period });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="min-h-dvh">
@@ -49,6 +59,7 @@ export function Dashboard() {
             <span className="hidden text-sm text-ink-soft sm:inline">
               {viewer?.name ?? viewer?.email ?? ""}
             </span>
+            <ExportMenu onExport={handleExport} isExporting={isExporting} />
             <button
               type="button"
               onClick={() => void signOut()}
@@ -84,16 +95,8 @@ export function Dashboard() {
             className="rise-in flex flex-wrap gap-3"
             style={{ animationDelay: "80ms" }}
           >
-            <SummaryChip
-              label="En cuentas"
-              amount={totalAccounts}
-              tone="positive"
-            />
-            <SummaryChip
-              label="Te deben"
-              amount={totalReceivable}
-              tone="claim"
-            />
+            <SummaryChip label="En cuentas" amount={totalAccounts} tone="positive" />
+            <SummaryChip label="Te deben" amount={totalReceivable} tone="claim" />
             <SummaryChip label="Debes" amount={totalPayable} tone="debt" />
           </dl>
         </section>
@@ -101,7 +104,18 @@ export function Dashboard() {
         <div className="grid gap-5 lg:grid-cols-2">
           <AccountsSection accounts={accounts} className="lg:col-span-2" />
           <ReceivablesSection receivables={receivables} />
-          <PayablesSection payables={payables} />
+          <PayablesSection payables={payables} accounts={accounts} />
+
+          <ChartsSection
+            totalAccounts={totalAccounts}
+            totalReceivable={totalReceivable}
+            totalPayable={totalPayable}
+            monthlyData={monthlyData}
+          />
+
+          <div className="lg:col-span-2">
+            <HistorySection />
+          </div>
         </div>
       </main>
     </div>
@@ -121,11 +135,76 @@ function SummaryChip({ label, amount, tone }: SummaryChipProps) {
       <dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
         {label}
       </dt>
-      <dd
-        className={`mt-0.5 font-display text-xl font-semibold tabular-nums ${toneClasses.text}`}
-      >
+      <dd className={`mt-0.5 font-display text-xl font-semibold tabular-nums ${toneClasses.text}`}>
         {formatMoney(amount)}
       </dd>
     </div>
   );
+}
+
+interface ExportMenuProps {
+  onExport: (period: "weekly" | "monthly") => void;
+  isExporting: boolean;
+}
+
+function ExportMenu({ onExport, isExporting }: ExportMenuProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        disabled={isExporting}
+        className="rounded-lg border border-line px-3 py-1.5 text-sm font-semibold transition-colors duration-150 hover:border-ink/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:opacity-50"
+      >
+        {isExporting ? "Exportando…" : "PDF ↓"}
+      </button>
+      {open && (
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="absolute right-0 z-20 mt-1 w-40 rounded-xl border border-line bg-card shadow-lg">
+            <button
+              type="button"
+              onClick={() => { setOpen(false); void onExport("weekly"); }}
+              className="w-full rounded-t-xl px-4 py-2.5 text-left text-sm font-medium transition-colors hover:bg-line/30"
+            >
+              Esta semana
+            </button>
+            <button
+              type="button"
+              onClick={() => { setOpen(false); void onExport("monthly"); }}
+              className="w-full rounded-b-xl border-t border-line px-4 py-2.5 text-left text-sm font-medium transition-colors hover:bg-line/30"
+            >
+              Este mes
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function buildMonthlyData(
+  transactions: { paidAt: number; amount: number }[],
+): { month: string; pagado: number }[] {
+  const now = new Date();
+  const months: { month: string; pagado: number }[] = [];
+
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const label = d.toLocaleDateString("es-BO", { month: "short" });
+    const start = d.getTime();
+    const end = new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime();
+    const pagado = transactions
+      .filter((tx) => tx.paidAt >= start && tx.paidAt < end)
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    months.push({ month: label, pagado });
+  }
+
+  return months;
 }

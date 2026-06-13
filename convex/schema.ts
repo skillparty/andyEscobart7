@@ -5,14 +5,13 @@ import { v } from "convex/values";
 export default defineSchema({
   ...authTables,
 
-  // Cuentas bancarias del usuario: nombre y saldo actual.
   accounts: defineTable({
     userId: v.id("users"),
     name: v.string(),
     balance: v.number(),
+    bankSlug: v.optional(v.string()),
   }).index("by_user", ["userId"]),
 
-  // Cuentas por cobrar: quién me debe y cuánto.
   receivables: defineTable({
     userId: v.id("users"),
     debtorName: v.string(),
@@ -20,11 +19,24 @@ export default defineSchema({
     note: v.optional(v.string()),
   }).index("by_user", ["userId"]),
 
-  // Cuentas por pagar: a quién debo, razón y monto.
   payables: defineTable({
     userId: v.id("users"),
     creditorName: v.string(),
     reason: v.string(),
     amount: v.number(),
   }).index("by_user", ["userId"]),
+
+  transactions: defineTable({
+    userId: v.id("users"),
+    type: v.union(v.literal("payment"), v.literal("collection")),
+    counterpartyName: v.string(),
+    reason: v.string(),
+    amount: v.number(),
+    accountId: v.optional(v.id("accounts")),
+    accountName: v.optional(v.string()),
+    bankSlug: v.optional(v.string()),
+    paidAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_time", ["userId", "paidAt"]),
 });

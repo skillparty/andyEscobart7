@@ -18,6 +18,7 @@ export const create = mutation({
   args: {
     name: v.string(),
     balance: v.number(),
+    bankSlug: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
@@ -29,6 +30,7 @@ export const create = mutation({
       userId,
       name,
       balance: args.balance,
+      bankSlug: args.bankSlug,
     });
   },
 });
@@ -38,6 +40,7 @@ export const update = mutation({
     id: v.id("accounts"),
     name: v.optional(v.string()),
     balance: v.optional(v.number()),
+    bankSlug: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
@@ -48,6 +51,7 @@ export const update = mutation({
     await ctx.db.patch(args.id, {
       ...(args.name !== undefined ? { name: args.name.trim() } : {}),
       ...(args.balance !== undefined ? { balance: args.balance } : {}),
+      ...(args.bankSlug !== undefined ? { bankSlug: args.bankSlug } : {}),
     });
   },
 });

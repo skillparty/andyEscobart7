@@ -21,14 +21,20 @@ export function RowButton({ type, label, onClick, children }: RowButtonProps) {
   );
 }
 
-export function SubmitButton({ isSaving }: { isSaving: boolean }) {
+export function SubmitButton({
+  isSaving,
+  label,
+}: {
+  isSaving: boolean;
+  label?: string;
+}) {
   return (
     <button
       type="submit"
       disabled={isSaving}
       className="self-end rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-paper transition-all duration-150 hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:opacity-50"
     >
-      {isSaving ? "Guardando…" : "Guardar"}
+      {isSaving ? "Guardando…" : (label ?? "Guardar")}
     </button>
   );
 }

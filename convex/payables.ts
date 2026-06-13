@@ -42,6 +42,49 @@ export const create = mutation({
   },
 });
 
+export const pay = mutation({
+  args: {
+    id: v.id("payables"),
+    accountId: v.optional(v.id("accounts")),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const payable = await ctx.db.get(args.id);
+    if (payable === null || payable.userId !== userId) {
+      throw new Error("Cuenta por pagar no encontrada");
+    }
+
+    let accountName: string | undefined;
+    let bankSlug: string | undefined;
+
+    if (args.accountId !== undefined) {
+      const account = await ctx.db.get(args.accountId);
+      if (account === null || account.userId !== userId) {
+        throw new Error("Cuenta bancaria no encontrada");
+      }
+      accountName = account.name;
+      bankSlug = account.bankSlug;
+      await ctx.db.patch(args.accountId, {
+        balance: account.balance - payable.amount,
+      });
+    }
+
+    await ctx.db.insert("transactions", {
+      userId,
+      type: "payment",
+      counterpartyName: payable.creditorName,
+      reason: payable.reason,
+      amount: payable.amount,
+      accountId: args.accountId,
+      accountName,
+      bankSlug,
+      paidAt: Date.now(),
+    });
+
+    await ctx.db.delete(args.id);
+  },
+});
+
 export const remove = mutation({
   args: { id: v.id("payables") },
   handler: async (ctx, args) => {
