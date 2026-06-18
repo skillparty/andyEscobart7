@@ -6,6 +6,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import type * as React from "react";
+import { useEffect } from "react";
 import appCss from "~/styles/app.css?url";
 
 export const Route = createRootRouteWithContext<{
@@ -14,11 +15,22 @@ export const Route = createRootRouteWithContext<{
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1, viewport-fit=cover",
+      },
       {
         name: "description",
         content:
           "Cuentas Claras — tus cuentas bancarias, lo que te deben y lo que debes, en un solo lugar.",
+      },
+      { name: "theme-color", content: "#f4f1e9" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-title", content: "Cuentas Claras" },
+      {
+        name: "apple-mobile-web-app-status-bar-style",
+        content: "default",
       },
       { title: "Cuentas Claras" },
     ],
@@ -35,6 +47,8 @@ export const Route = createRootRouteWithContext<{
         href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap",
       },
       { rel: "icon", href: "/favicon.ico" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "manifest", href: "/site.webmanifest" },
     ],
   }),
   notFoundComponent: () => <div>Página no encontrada</div>,
@@ -50,6 +64,7 @@ function RootComponent() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  useServiceWorker();
   return (
     <html lang="es">
       <head>
@@ -61,4 +76,23 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </body>
     </html>
   );
+}
+
+// Registra el service worker en el cliente para que la app sea instalable.
+function useServiceWorker() {
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) {
+      return;
+    }
+    const register = () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // El registro es best-effort; si falla, la app sigue funcionando.
+      });
+    };
+    if (document.readyState === "complete") {
+      register();
+    } else {
+      window.addEventListener("load", register, { once: true });
+    }
+  }, []);
 }
