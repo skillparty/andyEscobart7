@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "convex dev --start 'vite dev'",
     "build": "vite build && tsc --noEmit",
-    "start": "bun server.js",
     "format": "biome format --write .",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

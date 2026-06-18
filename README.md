@@ -2,7 +2,7 @@
 
 Gestor de finanzas personales: tus cuentas bancarias, lo que te deben y lo que debes, en un solo lugar. Inicio de sesión con Google.
 
-**Stack:** [TanStack Start](https://tanstack.com/start) · [Convex](https://convex.dev) (base de datos + backend en tiempo real) · [Convex Auth](https://labs.convex.dev/auth) (Google OAuth) · [Bun](https://bun.sh) · [Biome](https://biomejs.dev) · [Tailwind CSS 4](https://tailwindcss.com) · [Railway](https://railway.com)
+**Stack:** [TanStack Start](https://tanstack.com/start) · [Convex](https://convex.dev) (base de datos + backend en tiempo real) · [Convex Auth](https://labs.convex.dev/auth) (Google OAuth) · [Bun](https://bun.sh) · [Biome](https://biomejs.dev) · [Tailwind CSS 4](https://tailwindcss.com) · [Vercel](https://vercel.com)
 
 ## Funcionalidades
 
@@ -46,26 +46,26 @@ bun run test      # Vitest + convex-test (lógica de dinero y mutaciones)
 bun run build     # vite build + tsc --noEmit
 ```
 
-## Deploy en Railway
+## Deploy en Vercel
 
-El repo incluye `railway.json` (Nixpacks: `bun install && bun run build`, arranque con `bun server.js`).
-
-Convex producción y Railway se configuran por separado: Convex aloja el backend, Railway solo sirve el frontend SSR apuntando a la URL de producción de Convex.
+El repo incluye `vercel.json`: `vite build` genera `dist/client` (estáticos) y `dist/server/server.js` (handler SSR). Vercel sirve los estáticos por filesystem y manda el resto a la función `api/index.ts`, que delega en ese handler. Convex aloja el backend; Vercel solo sirve el frontend SSR apuntando a la URL de producción de Convex.
 
 1. **Despliega el backend de Convex a producción** (genera el deployment prod y su URL):
    ```bash
    bunx convex deploy
    ```
-2. **Configura las variables del deployment de producción de Convex.** `SITE_URL` debe ser la URL pública de Railway (se usa para los redirects de OAuth):
+2. **Crea el proyecto en Vercel** desde este repo (framework: *Other*; el `vercel.json` define build y rutas). En *Environment Variables* agrega:
+   - `VITE_CONVEX_URL` = URL de producción de Convex (`https://<...>.convex.cloud`). Se incrusta en el bundle, por eso es necesaria en build.
+
+   El primer deploy te da la URL pública (`https://<tu-app>.vercel.app`).
+3. **Configura las variables del deployment de producción de Convex.** `SITE_URL` es la URL pública de Vercel (se usa para los redirects de OAuth):
    ```bash
    bunx convex env set --prod AUTH_GOOGLE_ID <client-id>
    bunx convex env set --prod AUTH_GOOGLE_SECRET <client-secret>
-   bunx convex env set --prod SITE_URL https://<tu-app>.up.railway.app
+   bunx convex env set --prod SITE_URL https://<tu-app>.vercel.app
    ```
-3. **Agrega la redirect URI de producción** en Google Cloud Console:
+4. **Agrega la redirect URI de producción** en Google Cloud Console:
    `https://<tu-deployment-prod>.convex.site/api/auth/callback/google`
-4. **Crea el servicio en Railway** desde este repo y define en *build*:
-   - `VITE_CONVEX_URL` = URL de producción de Convex (`https://<...>.convex.cloud`). Se incrusta en el bundle, por eso es necesaria en build.
 
 > **Datos:** un deployment de producción nuevo arranca vacío, así que **no** ejecutes `migrations:dollarsToCents` ahí. Esa migración solo convierte data antigua en dólares-flotante (deployment local/dev previo a guardar en centavos); córrela una sola vez y solo donde exista esa data:
 > ```bash
@@ -95,7 +95,8 @@ src/
 ├── lib/pdf.ts         # exportación a PDF (jsPDF, carga diferida)
 ├── routes/            # TanStack Router (file-based)
 └── styles/app.css     # design tokens (papel/tinta, semántica de color)
-server.js              # servidor de producción (Bun: estáticos + SSR)
+api/index.ts           # función SSR de Vercel (delega al handler de build)
+vercel.json            # build + ruteo (estáticos por filesystem, resto a SSR)
 ```
 
 Los montos se guardan como **centavos enteros**; la moneda es **BOB**. Para cambiarla, ajusta `CURRENCY` y el locale en `src/lib/money.ts`.
