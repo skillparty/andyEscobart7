@@ -42,6 +42,14 @@ export function HistorySection() {
           {transactions.map((tx) => {
             const date = new Date(tx.paidAt);
             const isCollection = tx.type === "collection";
+            const isAdjustment = tx.type === "adjustment";
+            // El ajuste guarda el delta con signo; pago/cobro guardan positivo.
+            const isCredit = isCollection || (isAdjustment && tx.amount >= 0);
+            const amountClass = isAdjustment
+              ? "text-ink-soft"
+              : isCredit
+                ? "text-positive"
+                : "text-debt";
             return (
               <li key={tx._id} className="group flex items-center gap-3 py-3">
                 {tx.bankSlug ? (
@@ -60,12 +68,10 @@ export function HistorySection() {
                 </span>
                 <span className="shrink-0 text-right">
                   <span
-                    className={`block font-medium tabular-nums ${
-                      isCollection ? "text-positive" : "text-debt"
-                    }`}
+                    className={`block font-medium tabular-nums ${amountClass}`}
                   >
-                    {isCollection ? "+" : "−"}
-                    {formatMoney(tx.amount)}
+                    {isCredit ? "+" : "−"}
+                    {formatMoney(Math.abs(tx.amount))}
                   </span>
                   <time
                     dateTime={date.toISOString()}
@@ -79,13 +85,15 @@ export function HistorySection() {
                   </time>
                 </span>
                 <span className="shrink-0 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
-                  <RowButton
-                    type="button"
-                    label={`Revertir ${isCollection ? "cobro" : "pago"}: ${tx.counterpartyName}`}
-                    onClick={() => void reverse({ id: tx._id })}
-                  >
-                    ↺
-                  </RowButton>
+                  {isAdjustment ? null : (
+                    <RowButton
+                      type="button"
+                      label={`Revertir ${isCollection ? "cobro" : "pago"}: ${tx.counterpartyName}`}
+                      onClick={() => void reverse({ id: tx._id })}
+                    >
+                      ↺
+                    </RowButton>
+                  )}
                 </span>
               </li>
             );

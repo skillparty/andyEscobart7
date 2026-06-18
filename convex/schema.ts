@@ -28,7 +28,11 @@ export default defineSchema({
 
   transactions: defineTable({
     userId: v.id("users"),
-    type: v.union(v.literal("payment"), v.literal("collection")),
+    type: v.union(
+      v.literal("payment"),
+      v.literal("collection"),
+      v.literal("adjustment"),
+    ),
     counterpartyName: v.string(),
     reason: v.string(),
     amount: v.number(),

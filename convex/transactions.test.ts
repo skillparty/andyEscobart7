@@ -84,6 +84,59 @@ describe("transactions.reverse", () => {
     expect(await as.query(api.transactions.list)).toHaveLength(0);
   });
 
+  test("editar el saldo a mano registra un ajuste con el delta", async () => {
+    const t = convexTest(schema, modules);
+    const { as } = await withUser(t);
+    const accountId = await as.mutation(api.accounts.create, {
+      name: "Ahorros",
+      balance: 50000,
+    });
+
+    // Subir saldo: delta positivo
+    await as.mutation(api.accounts.update, { id: accountId, balance: 80000 });
+    // Bajar saldo: delta negativo
+    await as.mutation(api.accounts.update, { id: accountId, balance: 60000 });
+
+    const txs = await as.query(api.transactions.list);
+    expect(txs).toHaveLength(2);
+    const adjustments = txs.filter((tx) => tx.type === "adjustment");
+    expect(adjustments).toHaveLength(2);
+    expect(adjustments.map((a) => a.amount).sort((x, y) => x - y)).toEqual([
+      -20000, // 60000 - 80000
+      30000, // 80000 - 50000
+    ]);
+  });
+
+  test("editar solo el nombre no genera ajuste", async () => {
+    const t = convexTest(schema, modules);
+    const { as } = await withUser(t);
+    const accountId = await as.mutation(api.accounts.create, {
+      name: "Vieja",
+      balance: 50000,
+    });
+
+    await as.mutation(api.accounts.update, { id: accountId, name: "Nueva" });
+    // Mismo saldo: tampoco genera ajuste
+    await as.mutation(api.accounts.update, { id: accountId, balance: 50000 });
+
+    expect(await as.query(api.transactions.list)).toHaveLength(0);
+  });
+
+  test("un ajuste no se puede revertir", async () => {
+    const t = convexTest(schema, modules);
+    const { as } = await withUser(t);
+    const accountId = await as.mutation(api.accounts.create, {
+      name: "Ahorros",
+      balance: 50000,
+    });
+    await as.mutation(api.accounts.update, { id: accountId, balance: 70000 });
+    const [tx] = await as.query(api.transactions.list);
+
+    await expect(
+      as.mutation(api.transactions.reverse, { id: tx._id }),
+    ).rejects.toThrow(/ajuste de saldo no se revierte/i);
+  });
+
   test("rechaza revertir la transacción de otro usuario", async () => {
     const t = convexTest(schema, modules);
     const owner = await withUser(t);

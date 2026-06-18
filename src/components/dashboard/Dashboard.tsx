@@ -215,17 +215,18 @@ function ExportMenu({ onExport, isExporting }: ExportMenuProps) {
 }
 
 function buildMonthlyData(
-  transactions: { paidAt: number; amount: number }[],
+  transactions: { paidAt: number; amount: number; type: string }[],
 ): { month: string; pagado: number }[] {
   const now = new Date();
   const months: { month: string; pagado: number }[] = [];
+  const payments = transactions.filter((tx) => tx.type === "payment");
 
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const label = d.toLocaleDateString("es-BO", { month: "short" });
     const start = d.getTime();
     const end = new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime();
-    const pagado = transactions
+    const pagado = payments
       .filter((tx) => tx.paidAt >= start && tx.paidAt < end)
       .reduce((sum, tx) => sum + tx.amount, 0);
     months.push({ month: label, pagado });

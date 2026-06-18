@@ -48,11 +48,30 @@ export const update = mutation({
     if (account === null || account.userId !== userId) {
       throw new Error("Cuenta no encontrada");
     }
+
+    const newName = args.name !== undefined ? args.name.trim() : account.name;
+
     await ctx.db.patch(args.id, {
-      ...(args.name !== undefined ? { name: args.name.trim() } : {}),
+      ...(args.name !== undefined ? { name: newName } : {}),
       ...(args.balance !== undefined ? { balance: args.balance } : {}),
       ...(args.bankSlug !== undefined ? { bankSlug: args.bankSlug } : {}),
     });
+
+    // Editar el saldo a mano deja rastro en el historial para que el balance
+    // siempre cuadre con las transacciones. El monto guarda el delta con signo.
+    if (args.balance !== undefined && args.balance !== account.balance) {
+      await ctx.db.insert("transactions", {
+        userId,
+        type: "adjustment",
+        counterpartyName: newName,
+        reason: "Ajuste manual de saldo",
+        amount: args.balance - account.balance,
+        accountId: args.id,
+        accountName: newName,
+        bankSlug: account.bankSlug,
+        paidAt: Date.now(),
+      });
+    }
   },
 });
 

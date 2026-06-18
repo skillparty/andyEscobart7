@@ -30,6 +30,11 @@ export const reverse = mutation({
     if (tx === null || tx.userId !== userId) {
       throw new Error("Transacción no encontrada");
     }
+    if (tx.type === "adjustment") {
+      throw new Error(
+        "Un ajuste de saldo no se revierte; edita el saldo de nuevo",
+      );
+    }
 
     const isPayment = tx.type === "payment";
 
