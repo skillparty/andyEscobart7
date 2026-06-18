@@ -1,16 +1,44 @@
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUserId } from "./users";
 
+// El inicio del mes hace 5 meses: cubre la ventana del gráfico (6 meses) y de
+// los PDF (semana/mes actuales). Acota la lectura reactiva del dashboard.
+function sixMonthWindowStart(): number {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() - 5, 1).getTime();
+}
+
+/**
+ * Transacciones recientes (últimos ~6 meses), para el resumen, el gráfico
+ * mensual y la exportación a PDF. Acotado por tiempo para no leer todo el
+ * historial en cada render reactivo.
+ */
 export const list = query({
   args: {},
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
     return await ctx.db
       .query("transactions")
-      .withIndex("by_user_time", (q) => q.eq("userId", userId))
+      .withIndex("by_user_time", (q) =>
+        q.eq("userId", userId).gte("paidAt", sixMonthWindowStart()),
+      )
       .order("desc")
       .collect();
+  },
+});
+
+/** Historial paginado completo, para la lista con "cargar más". */
+export const page = query({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    return await ctx.db
+      .query("transactions")
+      .withIndex("by_user_time", (q) => q.eq("userId", userId))
+      .order("desc")
+      .paginate(args.paginationOpts);
   },
 });
 

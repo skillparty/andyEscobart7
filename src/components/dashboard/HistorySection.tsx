@@ -1,14 +1,24 @@
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery } from "convex/react";
 import { BankLogo } from "~/components/ui/BankLogo";
 import { RowButton } from "~/components/ui/buttons";
 import { formatMoney } from "~/lib/money";
 import { api } from "../../../convex/_generated/api";
 
+const PAGE_SIZE = 15;
+
 export function HistorySection() {
-  const transactions = useQuery(api.transactions.list);
+  const {
+    results: transactions,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
+    api.transactions.page,
+    {},
+    { initialNumItems: PAGE_SIZE },
+  );
   const reverse = useMutation(api.transactions.reverse);
 
-  if (transactions === undefined) {
+  if (status === "LoadingFirstPage") {
     return (
       <section
         aria-label="Historial de pagos"
@@ -100,6 +110,19 @@ export function HistorySection() {
           })}
         </ul>
       )}
+
+      {status === "CanLoadMore" ? (
+        <button
+          type="button"
+          onClick={() => loadMore(PAGE_SIZE)}
+          className="mt-4 w-full rounded-lg border border-line px-3 py-2 text-sm font-semibold transition-colors duration-150 hover:border-ink/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
+          Cargar más
+        </button>
+      ) : null}
+      {status === "LoadingMore" ? (
+        <p className="mt-4 text-center text-sm text-ink-soft">Cargando…</p>
+      ) : null}
     </section>
   );
 }

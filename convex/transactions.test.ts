@@ -12,6 +12,68 @@ async function withUser(t: ReturnType<typeof convexTest>) {
   return { userId, as };
 }
 
+describe("transactions.list / page", () => {
+  test("list omite transacciones de hace más de 6 meses; page las incluye", async () => {
+    const t = convexTest(schema, modules);
+    const { userId, as } = await withUser(t);
+
+    // Una transacción vieja (hace ~8 meses) insertada directo
+    const eightMonthsAgo = Date.now() - 240 * 24 * 60 * 60 * 1000;
+    await t.run(async (ctx) =>
+      ctx.db.insert("transactions", {
+        userId,
+        type: "payment",
+        counterpartyName: "Antigua",
+        reason: "Vieja",
+        amount: 1000,
+        paidAt: eightMonthsAgo,
+      }),
+    );
+    // Una reciente
+    const payableId = await as.mutation(api.payables.create, {
+      creditorName: "Nueva",
+      reason: "Reciente",
+      amount: 2000,
+    });
+    await as.mutation(api.payables.pay, { id: payableId });
+
+    const recent = await as.query(api.transactions.list);
+    expect(recent).toHaveLength(1);
+    expect(recent[0].counterpartyName).toBe("Nueva");
+
+    const firstPage = await as.query(api.transactions.page, {
+      paginationOpts: { numItems: 50, cursor: null },
+    });
+    expect(firstPage.page).toHaveLength(2); // incluye la vieja
+  });
+
+  test("page respeta el tamaño y entrega un cursor para continuar", async () => {
+    const t = convexTest(schema, modules);
+    const { as } = await withUser(t);
+
+    for (let i = 0; i < 3; i++) {
+      const id = await as.mutation(api.payables.create, {
+        creditorName: `C${i}`,
+        reason: "R",
+        amount: 1000,
+      });
+      await as.mutation(api.payables.pay, { id });
+    }
+
+    const first = await as.query(api.transactions.page, {
+      paginationOpts: { numItems: 2, cursor: null },
+    });
+    expect(first.page).toHaveLength(2);
+    expect(first.isDone).toBe(false);
+
+    const second = await as.query(api.transactions.page, {
+      paginationOpts: { numItems: 2, cursor: first.continueCursor },
+    });
+    expect(second.page).toHaveLength(1);
+    expect(second.isDone).toBe(true);
+  });
+});
+
 describe("transactions.reverse", () => {
   test("revierte un pago con cuenta: restaura saldo y reabre la deuda", async () => {
     const t = convexTest(schema, modules);
