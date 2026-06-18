@@ -120,7 +120,7 @@ export function Dashboard() {
 
         <div className="grid gap-5 lg:grid-cols-2">
           <AccountsSection accounts={accounts} className="lg:col-span-2" />
-          <ReceivablesSection receivables={receivables} />
+          <ReceivablesSection receivables={receivables} accounts={accounts} />
           <PayablesSection payables={payables} accounts={accounts} />
 
           <ChartsSection

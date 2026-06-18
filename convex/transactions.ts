@@ -15,11 +15,12 @@ export const list = query({
 });
 
 /**
- * Revierte un pago registrado: deshace su efecto financiero.
- * - Devuelve el monto al saldo de la cuenta usada (si sigue existiendo).
- * - Reabre la deuda: la suma a una "por pagar" idéntica si aún existe,
- *   o la recrea.
- * - Elimina la transacción del historial.
+ * Revierte una transacción (pago o cobro): deshace su efecto financiero.
+ * - Pago: devuelve el monto al saldo de la cuenta y reabre la deuda por pagar.
+ * - Cobro: descuenta el monto del saldo de la cuenta y reabre la deuda por
+ *   cobrar.
+ * En ambos casos la deuda se fusiona con una idéntica si aún existe; si no,
+ * se recrea. Finalmente elimina la transacción del historial.
  */
 export const reverse = mutation({
   args: { id: v.id("transactions") },
@@ -29,36 +30,58 @@ export const reverse = mutation({
     if (tx === null || tx.userId !== userId) {
       throw new Error("Transacción no encontrada");
     }
-    if (tx.type !== "payment") {
-      throw new Error("Solo se pueden revertir pagos");
-    }
 
+    const isPayment = tx.type === "payment";
+
+    // Pago salió de la cuenta -> al revertir entra; cobro entró -> al revertir sale.
     if (tx.accountId !== undefined) {
       const account = await ctx.db.get(tx.accountId);
       if (account !== null && account.userId === userId) {
-        await ctx.db.patch(tx.accountId, {
-          balance: account.balance + tx.amount,
-        });
+        const restored = isPayment
+          ? account.balance + tx.amount
+          : account.balance - tx.amount;
+        await ctx.db.patch(tx.accountId, { balance: restored });
       }
     }
 
-    const existing = await ctx.db
-      .query("payables")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-    const match = existing.find(
-      (p) => p.creditorName === tx.counterpartyName && p.reason === tx.reason,
-    );
-
-    if (match !== undefined) {
-      await ctx.db.patch(match._id, { amount: match.amount + tx.amount });
+    if (isPayment) {
+      const existing = await ctx.db
+        .query("payables")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect();
+      const match = existing.find(
+        (p) => p.creditorName === tx.counterpartyName && p.reason === tx.reason,
+      );
+      if (match !== undefined) {
+        await ctx.db.patch(match._id, { amount: match.amount + tx.amount });
+      } else {
+        await ctx.db.insert("payables", {
+          userId,
+          creditorName: tx.counterpartyName,
+          reason: tx.reason,
+          amount: tx.amount,
+        });
+      }
     } else {
-      await ctx.db.insert("payables", {
-        userId,
-        creditorName: tx.counterpartyName,
-        reason: tx.reason,
-        amount: tx.amount,
-      });
+      const existing = await ctx.db
+        .query("receivables")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect();
+      const match = existing.find(
+        (r) =>
+          r.debtorName === tx.counterpartyName &&
+          (r.note ?? "Cobro") === tx.reason,
+      );
+      if (match !== undefined) {
+        await ctx.db.patch(match._id, { amount: match.amount + tx.amount });
+      } else {
+        await ctx.db.insert("receivables", {
+          userId,
+          debtorName: tx.counterpartyName,
+          amount: tx.amount,
+          note: tx.reason === "Cobro" ? undefined : tx.reason,
+        });
+      }
     }
 
     await ctx.db.delete(args.id);

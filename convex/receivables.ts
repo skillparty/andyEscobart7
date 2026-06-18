@@ -38,6 +38,64 @@ export const create = mutation({
   },
 });
 
+export const collect = mutation({
+  args: {
+    id: v.id("receivables"),
+    accountId: v.optional(v.id("accounts")),
+    // Monto a cobrar en centavos. Si se omite, se cobra el saldo completo.
+    amount: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const receivable = await ctx.db.get(args.id);
+    if (receivable === null || receivable.userId !== userId) {
+      throw new Error("Cuenta por cobrar no encontrada");
+    }
+
+    const collectedAmount = args.amount ?? receivable.amount;
+    if (!Number.isInteger(collectedAmount) || collectedAmount <= 0) {
+      throw new Error("El monto a cobrar debe ser mayor que cero");
+    }
+    if (collectedAmount > receivable.amount) {
+      throw new Error("El monto supera lo que te deben");
+    }
+
+    let accountName: string | undefined;
+    let bankSlug: string | undefined;
+
+    if (args.accountId !== undefined) {
+      const account = await ctx.db.get(args.accountId);
+      if (account === null || account.userId !== userId) {
+        throw new Error("Cuenta bancaria no encontrada");
+      }
+      accountName = account.name;
+      bankSlug = account.bankSlug;
+      await ctx.db.patch(args.accountId, {
+        balance: account.balance + collectedAmount,
+      });
+    }
+
+    await ctx.db.insert("transactions", {
+      userId,
+      type: "collection",
+      counterpartyName: receivable.debtorName,
+      reason: receivable.note ?? "Cobro",
+      amount: collectedAmount,
+      accountId: args.accountId,
+      accountName,
+      bankSlug,
+      paidAt: Date.now(),
+    });
+
+    const remaining = receivable.amount - collectedAmount;
+    if (remaining > 0) {
+      await ctx.db.patch(args.id, { amount: remaining });
+    } else {
+      await ctx.db.delete(args.id);
+    }
+  },
+});
+
 export const remove = mutation({
   args: { id: v.id("receivables") },
   handler: async (ctx, args) => {

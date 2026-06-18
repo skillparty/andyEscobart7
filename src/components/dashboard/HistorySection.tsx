@@ -41,6 +41,7 @@ export function HistorySection() {
         <ul className="mt-4 divide-y divide-line/70">
           {transactions.map((tx) => {
             const date = new Date(tx.paidAt);
+            const isCollection = tx.type === "collection";
             return (
               <li key={tx._id} className="group flex items-center gap-3 py-3">
                 {tx.bankSlug ? (
@@ -58,8 +59,13 @@ export function HistorySection() {
                   </span>
                 </span>
                 <span className="shrink-0 text-right">
-                  <span className="block font-medium tabular-nums text-debt">
-                    −{formatMoney(tx.amount)}
+                  <span
+                    className={`block font-medium tabular-nums ${
+                      isCollection ? "text-positive" : "text-debt"
+                    }`}
+                  >
+                    {isCollection ? "+" : "−"}
+                    {formatMoney(tx.amount)}
                   </span>
                   <time
                     dateTime={date.toISOString()}
@@ -75,7 +81,7 @@ export function HistorySection() {
                 <span className="shrink-0 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
                   <RowButton
                     type="button"
-                    label={`Revertir pago a ${tx.counterpartyName}`}
+                    label={`Revertir ${isCollection ? "cobro" : "pago"}: ${tx.counterpartyName}`}
                     onClick={() => void reverse({ id: tx._id })}
                   >
                     ↺
