@@ -1,15 +1,22 @@
-import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { useMutation, useQuery } from "convex/react";
 import { BankLogo } from "~/components/ui/BankLogo";
+import { RowButton } from "~/components/ui/buttons";
 import { formatMoney } from "~/lib/money";
+import { api } from "../../../convex/_generated/api";
 
 export function HistorySection() {
   const transactions = useQuery(api.transactions.list);
+  const reverse = useMutation(api.transactions.reverse);
 
   if (transactions === undefined) {
     return (
-      <section aria-label="Historial de pagos" className="rounded-2xl border border-line bg-card p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-soft">Historial</p>
+      <section
+        aria-label="Historial de pagos"
+        className="rounded-2xl border border-line bg-card p-6"
+      >
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-soft">
+          Historial
+        </p>
         <p className="mt-1 text-lg font-semibold">Pagos realizados</p>
         <p className="mt-4 text-sm text-ink-soft">Cargando…</p>
       </section>
@@ -21,7 +28,9 @@ export function HistorySection() {
       aria-label="Historial de pagos"
       className="rounded-2xl border border-line bg-card p-6"
     >
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-soft">Historial</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-soft">
+        Historial
+      </p>
       <p className="mt-1 text-lg font-semibold">Pagos realizados</p>
 
       {transactions.length === 0 ? (
@@ -33,7 +42,7 @@ export function HistorySection() {
           {transactions.map((tx) => {
             const date = new Date(tx.paidAt);
             return (
-              <li key={tx._id} className="flex items-center gap-3 py-3">
+              <li key={tx._id} className="group flex items-center gap-3 py-3">
                 {tx.bankSlug ? (
                   <BankLogo slug={tx.bankSlug} size={28} className="shrink-0" />
                 ) : (
@@ -62,6 +71,15 @@ export function HistorySection() {
                       year: "numeric",
                     })}
                   </time>
+                </span>
+                <span className="shrink-0 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+                  <RowButton
+                    type="button"
+                    label={`Revertir pago a ${tx.counterpartyName}`}
+                    onClick={() => void reverse({ id: tx._id })}
+                  >
+                    ↺
+                  </RowButton>
                 </span>
               </li>
             );

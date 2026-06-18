@@ -22,7 +22,10 @@ export function Dashboard() {
   const [isExporting, setIsExporting] = useState(false);
 
   const totalAccounts = (accounts ?? []).reduce((sum, a) => sum + a.balance, 0);
-  const totalReceivable = (receivables ?? []).reduce((sum, r) => sum + r.amount, 0);
+  const totalReceivable = (receivables ?? []).reduce(
+    (sum, r) => sum + r.amount,
+    0,
+  );
   const totalPayable = (payables ?? []).reduce((sum, p) => sum + p.amount, 0);
   const netBalance = totalAccounts + totalReceivable - totalPayable;
 
@@ -32,7 +35,13 @@ export function Dashboard() {
     if (!accounts || !receivables || !payables || !transactions) return;
     setIsExporting(true);
     try {
-      await exportPdf({ accounts, receivables, payables, transactions, period });
+      await exportPdf({
+        accounts,
+        receivables,
+        payables,
+        transactions,
+        period,
+      });
     } finally {
       setIsExporting(false);
     }
@@ -95,8 +104,16 @@ export function Dashboard() {
             className="rise-in flex flex-wrap gap-3"
             style={{ animationDelay: "80ms" }}
           >
-            <SummaryChip label="En cuentas" amount={totalAccounts} tone="positive" />
-            <SummaryChip label="Te deben" amount={totalReceivable} tone="claim" />
+            <SummaryChip
+              label="En cuentas"
+              amount={totalAccounts}
+              tone="positive"
+            />
+            <SummaryChip
+              label="Te deben"
+              amount={totalReceivable}
+              tone="claim"
+            />
             <SummaryChip label="Debes" amount={totalPayable} tone="debt" />
           </dl>
         </section>
@@ -135,7 +152,9 @@ function SummaryChip({ label, amount, tone }: SummaryChipProps) {
       <dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
         {label}
       </dt>
-      <dd className={`mt-0.5 font-display text-xl font-semibold tabular-nums ${toneClasses.text}`}>
+      <dd
+        className={`mt-0.5 font-display text-xl font-semibold tabular-nums ${toneClasses.text}`}
+      >
         {formatMoney(amount)}
       </dd>
     </div>
@@ -170,14 +189,20 @@ function ExportMenu({ onExport, isExporting }: ExportMenuProps) {
           <div className="absolute right-0 z-20 mt-1 w-40 rounded-xl border border-line bg-card shadow-lg">
             <button
               type="button"
-              onClick={() => { setOpen(false); void onExport("weekly"); }}
+              onClick={() => {
+                setOpen(false);
+                void onExport("weekly");
+              }}
               className="w-full rounded-t-xl px-4 py-2.5 text-left text-sm font-medium transition-colors hover:bg-line/30"
             >
               Esta semana
             </button>
             <button
               type="button"
-              onClick={() => { setOpen(false); void onExport("monthly"); }}
+              onClick={() => {
+                setOpen(false);
+                void onExport("monthly");
+              }}
               className="w-full rounded-b-xl border-t border-line px-4 py-2.5 text-left text-sm font-medium transition-colors hover:bg-line/30"
             >
               Este mes

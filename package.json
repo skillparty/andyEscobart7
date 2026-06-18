@@ -9,7 +9,9 @@
     "start": "bun server.js",
     "format": "biome format --write .",
     "lint": "biome check .",
-    "lint:fix": "biome check --write ."
+    "lint:fix": "biome check --write .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@auth/core": "0.37.0",
@@ -28,14 +30,17 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.0",
+    "@edge-runtime/vm": "^5.0.0",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^25.9.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
+    "convex-test": "^0.0.53",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.3",
     "vite": "^8.0.9",
-    "vite-tsconfig-paths": "^6.1.1"
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.1.9"
   }
 }

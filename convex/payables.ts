@@ -46,12 +46,22 @@ export const pay = mutation({
   args: {
     id: v.id("payables"),
     accountId: v.optional(v.id("accounts")),
+    // Monto a pagar en centavos. Si se omite, se paga el saldo completo.
+    amount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const payable = await ctx.db.get(args.id);
     if (payable === null || payable.userId !== userId) {
       throw new Error("Cuenta por pagar no encontrada");
+    }
+
+    const paidAmount = args.amount ?? payable.amount;
+    if (!Number.isInteger(paidAmount) || paidAmount <= 0) {
+      throw new Error("El monto a pagar debe ser mayor que cero");
+    }
+    if (paidAmount > payable.amount) {
+      throw new Error("El monto supera lo que debes");
     }
 
     let accountName: string | undefined;
@@ -62,10 +72,13 @@ export const pay = mutation({
       if (account === null || account.userId !== userId) {
         throw new Error("Cuenta bancaria no encontrada");
       }
+      if (account.balance < paidAmount) {
+        throw new Error("Saldo insuficiente en la cuenta seleccionada");
+      }
       accountName = account.name;
       bankSlug = account.bankSlug;
       await ctx.db.patch(args.accountId, {
-        balance: account.balance - payable.amount,
+        balance: account.balance - paidAmount,
       });
     }
 
@@ -74,14 +87,19 @@ export const pay = mutation({
       type: "payment",
       counterpartyName: payable.creditorName,
       reason: payable.reason,
-      amount: payable.amount,
+      amount: paidAmount,
       accountId: args.accountId,
       accountName,
       bankSlug,
       paidAt: Date.now(),
     });
 
-    await ctx.db.delete(args.id);
+    const remaining = payable.amount - paidAmount;
+    if (remaining > 0) {
+      await ctx.db.patch(args.id, { amount: remaining });
+    } else {
+      await ctx.db.delete(args.id);
+    }
   },
 });
 

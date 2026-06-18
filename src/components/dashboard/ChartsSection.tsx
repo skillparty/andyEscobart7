@@ -31,8 +31,16 @@ export function ChartsSection({
   monthlyData,
 }: ChartsSectionProps) {
   const donutData = [
-    { name: "En cuentas", value: Math.max(totalAccounts, 0), color: COLORS.positive },
-    { name: "Te deben", value: Math.max(totalReceivable, 0), color: COLORS.claim },
+    {
+      name: "En cuentas",
+      value: Math.max(totalAccounts, 0),
+      color: COLORS.positive,
+    },
+    {
+      name: "Te deben",
+      value: Math.max(totalReceivable, 0),
+      color: COLORS.claim,
+    },
     { name: "Debes", value: Math.max(totalPayable, 0), color: COLORS.debt },
   ].filter((d) => d.value > 0);
 
@@ -122,7 +130,10 @@ export function ChartsSection({
                   }
                 />
                 <Tooltip
-                  formatter={(value) => [formatMoney(value as number), "Pagado"]}
+                  formatter={(value) => [
+                    formatMoney(value as number),
+                    "Pagado",
+                  ]}
                   contentStyle={{
                     borderRadius: "10px",
                     border: "1px solid var(--color-line)",

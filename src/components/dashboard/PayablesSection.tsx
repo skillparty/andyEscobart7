@@ -1,11 +1,11 @@
 import { useMutation } from "convex/react";
 import type * as React from "react";
 import { useState } from "react";
+import { BankLogo } from "~/components/ui/BankLogo";
 import { RowButton, SubmitButton } from "~/components/ui/buttons";
 import { EmptyState, LedgerCard } from "~/components/ui/LedgerCard";
-import { BankLogo } from "~/components/ui/BankLogo";
 import { INPUT_CLASS, LABEL_CLASS } from "~/components/ui/tones";
-import { formatMoney, parseAmount } from "~/lib/money";
+import { centsToInput, formatMoney, parseAmount } from "~/lib/money";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
@@ -54,11 +54,27 @@ function PayableRow({
   const payMutation = useMutation(api.payables.pay);
   const [isPaying, setIsPaying] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+  const [payAmount, setPayAmount] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const startPaying = () => {
+    setPayAmount(centsToInput(item.amount));
+    setIsPaying(true);
+  };
+
   const handlePay = async (event: React.FormEvent) => {
     event.preventDefault();
+    const parsedAmount = parseAmount(payAmount);
+    if (parsedAmount === null || parsedAmount <= 0) {
+      setError("Escribe un monto mayor que cero");
+      return;
+    }
+    if (parsedAmount > item.amount) {
+      setError(`No puede superar ${formatMoney(item.amount)}`);
+      return;
+    }
+    setError(null);
     setIsSaving(true);
     try {
       await payMutation({
@@ -66,6 +82,7 @@ function PayableRow({
         accountId: selectedAccountId
           ? (selectedAccountId as Id<"accounts">)
           : undefined,
+        amount: parsedAmount,
       });
     } catch {
       setError("No se pudo registrar el pago. Intenta de nuevo.");
@@ -91,23 +108,34 @@ function PayableRow({
         </div>
         <form onSubmit={handlePay} className="grid gap-2">
           <div>
-            <label
-              htmlFor={`pay-account-${item._id}`}
-              className={LABEL_CLASS}
-            >
+            <label htmlFor={`pay-amount-${item._id}`} className={LABEL_CLASS}>
+              ¿Cuánto pagas?
+            </label>
+            <input
+              id={`pay-amount-${item._id}`}
+              value={payAmount}
+              onChange={(e) => setPayAmount(e.target.value)}
+              inputMode="decimal"
+              aria-label={`Monto a pagar a ${item.creditorName}`}
+              className={`${INPUT_CLASS} text-right`}
+            />
+          </div>
+          <div>
+            <label htmlFor={`pay-account-${item._id}`} className={LABEL_CLASS}>
               ¿Con qué cuenta pagas? (opcional)
             </label>
             <div className="relative">
-              {selectedAccountId && (
+              {selectedAccountId &&
                 (() => {
-                  const acc = accounts?.find((a) => a._id === selectedAccountId);
+                  const acc = accounts?.find(
+                    (a) => a._id === selectedAccountId,
+                  );
                   return acc?.bankSlug ? (
                     <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2">
                       <BankLogo slug={acc.bankSlug} size={18} />
                     </span>
                   ) : null;
-                })()
-              )}
+                })()}
               <select
                 id={`pay-account-${item._id}`}
                 value={selectedAccountId}
@@ -128,13 +156,17 @@ function PayableRow({
               <p className="text-xs text-debt">{error}</p>
             ) : (
               <p className="text-xs text-ink-soft">
-                Se restará {formatMoney(item.amount)} del saldo de la cuenta seleccionada.
+                Pago parcial permitido. Debes {formatMoney(item.amount)}; lo que
+                pagues se resta de la cuenta y del saldo de la deuda.
               </p>
             )}
             <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
-                onClick={() => { setIsPaying(false); setError(null); }}
+                onClick={() => {
+                  setIsPaying(false);
+                  setError(null);
+                }}
                 className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold transition-colors hover:border-ink/30"
               >
                 Cancelar
@@ -165,7 +197,7 @@ function PayableRow({
         <RowButton
           type="button"
           label={`Pagar: ${item.creditorName}`}
-          onClick={() => setIsPaying(true)}
+          onClick={startPaying}
         >
           ✓
         </RowButton>

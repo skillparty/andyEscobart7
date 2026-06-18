@@ -18,8 +18,7 @@ export async function exportPdf(data: ExportData): Promise<void> {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const now = new Date();
-  const periodLabel =
-    data.period === "weekly" ? "Semana actual" : "Mes actual";
+  const periodLabel = data.period === "weekly" ? "Semana actual" : "Mes actual";
 
   // Header
   doc.setFont("helvetica", "bold");
@@ -87,15 +86,24 @@ export async function exportPdf(data: ExportData): Promise<void> {
     body: data.accounts.map((a) => [a.name, formatMoney(a.balance)]),
     columnStyles: { 1: { halign: "right" } },
     styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: [230, 228, 222], textColor: 40, fontStyle: "bold" },
+    headStyles: {
+      fillColor: [230, 228, 222],
+      textColor: 40,
+      fontStyle: "bold",
+    },
     margin: { left: 14, right: 14 },
     theme: "plain",
   });
 
-  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  y =
+    (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
+      .finalY + 8;
 
   // Receivables table
-  if (y > 240) { doc.addPage(); y = 20; }
+  if (y > 240) {
+    doc.addPage();
+    y = 20;
+  }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.text("Por cobrar", 14, y);
@@ -105,19 +113,32 @@ export async function exportPdf(data: ExportData): Promise<void> {
     startY: y,
     head: [["Deudor", "Nota", "Monto"]],
     body: data.receivables.length
-      ? data.receivables.map((r) => [r.debtorName, r.note ?? "", formatMoney(r.amount)])
+      ? data.receivables.map((r) => [
+          r.debtorName,
+          r.note ?? "",
+          formatMoney(r.amount),
+        ])
       : [["—", "", ""]],
     columnStyles: { 2: { halign: "right" } },
     styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: [230, 228, 222], textColor: 40, fontStyle: "bold" },
+    headStyles: {
+      fillColor: [230, 228, 222],
+      textColor: 40,
+      fontStyle: "bold",
+    },
     margin: { left: 14, right: 14 },
     theme: "plain",
   });
 
-  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  y =
+    (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
+      .finalY + 8;
 
   // Payables table
-  if (y > 240) { doc.addPage(); y = 20; }
+  if (y > 240) {
+    doc.addPage();
+    y = 20;
+  }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.text("Por pagar", 14, y);
@@ -127,20 +148,33 @@ export async function exportPdf(data: ExportData): Promise<void> {
     startY: y,
     head: [["Acreedor", "Razón", "Monto"]],
     body: data.payables.length
-      ? data.payables.map((p) => [p.creditorName, p.reason, formatMoney(p.amount)])
+      ? data.payables.map((p) => [
+          p.creditorName,
+          p.reason,
+          formatMoney(p.amount),
+        ])
       : [["—", "", ""]],
     columnStyles: { 2: { halign: "right" } },
     styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: [230, 228, 222], textColor: 40, fontStyle: "bold" },
+    headStyles: {
+      fillColor: [230, 228, 222],
+      textColor: 40,
+      fontStyle: "bold",
+    },
     margin: { left: 14, right: 14 },
     theme: "plain",
   });
 
-  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  y =
+    (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
+      .finalY + 8;
 
   // History table
   const filtered = filterTransactions(data.transactions, data.period);
-  if (y > 220) { doc.addPage(); y = 20; }
+  if (y > 220) {
+    doc.addPage();
+    y = 20;
+  }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.text("Historial de pagos", 14, y);
@@ -164,7 +198,11 @@ export async function exportPdf(data: ExportData): Promise<void> {
       : [["—", "", "", "", ""]],
     columnStyles: { 4: { halign: "right" } },
     styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: [230, 228, 222], textColor: 40, fontStyle: "bold" },
+    headStyles: {
+      fillColor: [230, 228, 222],
+      textColor: 40,
+      fontStyle: "bold",
+    },
     margin: { left: 14, right: 14 },
     theme: "plain",
   });

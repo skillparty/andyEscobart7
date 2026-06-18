@@ -1,15 +1,15 @@
 import { useMutation } from "convex/react";
 import type * as React from "react";
 import { useState } from "react";
-import { api } from "../../../convex/_generated/api";
-import type { Doc } from "../../../convex/_generated/dataModel";
-import { RowButton, SubmitButton } from "~/components/ui/buttons";
-import { EmptyState, LedgerCard } from "~/components/ui/LedgerCard";
 import { BankLogo } from "~/components/ui/BankLogo";
 import { BankSelect } from "~/components/ui/BankSelect";
+import { RowButton, SubmitButton } from "~/components/ui/buttons";
+import { EmptyState, LedgerCard } from "~/components/ui/LedgerCard";
 import { INPUT_CLASS, LABEL_CLASS } from "~/components/ui/tones";
-import { formatMoney, parseAmount } from "~/lib/money";
 import { getBankName } from "~/lib/banks";
+import { centsToInput, formatMoney, parseAmount } from "~/lib/money";
+import { api } from "../../../convex/_generated/api";
+import type { Doc } from "../../../convex/_generated/dataModel";
 
 interface AccountsSectionProps {
   accounts: Doc<"accounts">[] | undefined;
@@ -86,8 +86,16 @@ function AccountRow({ account }: { account: Doc<"accounts"> }) {
             // biome-ignore lint/a11y/noAutofocus: el usuario acaba de pedir editar
             autoFocus
           />
-          <RowButton type="submit" label="Guardar">✓</RowButton>
-          <RowButton type="button" label="Cancelar" onClick={() => setIsEditing(false)}>✕</RowButton>
+          <RowButton type="submit" label="Guardar">
+            ✓
+          </RowButton>
+          <RowButton
+            type="button"
+            label="Cancelar"
+            onClick={() => setIsEditing(false)}
+          >
+            ✕
+          </RowButton>
           {error && <span className="text-xs text-debt">{error}</span>}
         </form>
       </li>
@@ -102,7 +110,9 @@ function AccountRow({ account }: { account: Doc<"accounts"> }) {
         <span className="size-7 shrink-0 rounded-full bg-line/60" />
       )}
       <span className="min-w-0">
-        <span className="block truncate text-sm font-medium">{account.name}</span>
+        <span className="block truncate text-sm font-medium">
+          {account.name}
+        </span>
         {account.bankSlug && (
           <span className="block truncate text-xs text-ink-soft">
             {getBankName(account.bankSlug)}
@@ -110,20 +120,29 @@ function AccountRow({ account }: { account: Doc<"accounts"> }) {
         )}
       </span>
       <span className="ledger-dots" />
-      <span className={`font-medium tabular-nums shrink-0 ${account.balance < 0 ? "text-debt" : "text-ink"}`}>
+      <span
+        className={`font-medium tabular-nums shrink-0 ${account.balance < 0 ? "text-debt" : "text-ink"}`}
+      >
         {formatMoney(account.balance)}
       </span>
       <span className="flex gap-1 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100 shrink-0">
         <RowButton
           type="button"
           label={`Editar saldo de ${account.name}`}
-          onClick={() => { setDraftBalance(String(account.balance)); setIsEditing(true); }}
-        >✎</RowButton>
+          onClick={() => {
+            setDraftBalance(centsToInput(account.balance));
+            setIsEditing(true);
+          }}
+        >
+          ✎
+        </RowButton>
         <RowButton
           type="button"
           label={`Eliminar cuenta ${account.name}`}
           onClick={() => void removeAccount({ id: account._id })}
-        >✕</RowButton>
+        >
+          ✕
+        </RowButton>
       </span>
     </li>
   );
@@ -140,11 +159,21 @@ function AccountForm({ onDone }: { onDone: () => void }) {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const parsedBalance = parseAmount(balance);
-    if (name.trim().length === 0) { setError("Escribe el nombre de la cuenta"); return; }
-    if (parsedBalance === null) { setError("Escribe un saldo válido, por ejemplo 1500.00"); return; }
+    if (name.trim().length === 0) {
+      setError("Escribe el nombre de la cuenta");
+      return;
+    }
+    if (parsedBalance === null) {
+      setError("Escribe un saldo válido, por ejemplo 1500.00");
+      return;
+    }
     setIsSaving(true);
     try {
-      await createAccount({ name, balance: parsedBalance, bankSlug: bankSlug || undefined });
+      await createAccount({
+        name,
+        balance: parsedBalance,
+        bankSlug: bankSlug || undefined,
+      });
       onDone();
     } catch {
       setError("No se pudo guardar. Intenta de nuevo.");
@@ -157,11 +186,19 @@ function AccountForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={handleSubmit} className="grid gap-3">
       <div className="grid gap-3 sm:grid-cols-[1fr_1fr]">
         <div>
-          <label htmlFor="account-bank" className={LABEL_CLASS}>Banco</label>
-          <BankSelect id="account-bank" value={bankSlug} onChange={setBankSlug} />
+          <label htmlFor="account-bank" className={LABEL_CLASS}>
+            Banco
+          </label>
+          <BankSelect
+            id="account-bank"
+            value={bankSlug}
+            onChange={setBankSlug}
+          />
         </div>
         <div>
-          <label htmlFor="account-name" className={LABEL_CLASS}>Nombre / tipo de cuenta</label>
+          <label htmlFor="account-name" className={LABEL_CLASS}>
+            Nombre / tipo de cuenta
+          </label>
           <input
             id="account-name"
             value={name}
@@ -173,7 +210,9 @@ function AccountForm({ onDone }: { onDone: () => void }) {
       </div>
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
         <div>
-          <label htmlFor="account-balance" className={LABEL_CLASS}>Saldo actual</label>
+          <label htmlFor="account-balance" className={LABEL_CLASS}>
+            Saldo actual
+          </label>
           <input
             id="account-balance"
             value={balance}

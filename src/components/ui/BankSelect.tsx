@@ -1,6 +1,6 @@
 import { BANKS } from "~/lib/banks";
-import { INPUT_CLASS } from "./tones";
 import { BankLogo } from "./BankLogo";
+import { INPUT_CLASS } from "./tones";
 
 interface BankSelectProps {
   value: string;

@@ -3,9 +3,9 @@ import { useState } from "react";
 import { formatMoney } from "~/lib/money";
 
 const SAMPLE_ROWS = [
-  { label: "Cuenta de ahorros", amount: 1240.5 },
-  { label: "María me debe", amount: 85 },
-  { label: "Alquiler de junio", amount: -450 },
+  { label: "Cuenta de ahorros", amount: 124050 },
+  { label: "María me debe", amount: 8500 },
+  { label: "Alquiler de junio", amount: -45000 },
 ] as const;
 
 export function LoginScreen() {
