@@ -1,14 +1,19 @@
 /**
  * Marca compacta de la app: la iguana contable reducida a un glifo, dentro de
- * un disco de tinta. Reutiliza la identidad del login en el topbar.
+ * un disco de tinta. Reutiliza la identidad del login en el topbar y la
+ * pantalla de carga.
  */
-export function BrandMark() {
+export function BrandMark({ size = 36 }: { size?: number }) {
+  const glyph = Math.round(size * 0.56);
   return (
-    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-ink text-paper">
+    <span
+      className="grid shrink-0 place-items-center rounded-xl bg-ink text-paper"
+      style={{ width: size, height: size }}
+    >
       <svg
         viewBox="0 0 32 32"
-        width="20"
-        height="20"
+        width={glyph}
+        height={glyph}
         aria-hidden="true"
         fill="none"
         stroke="currentColor"
