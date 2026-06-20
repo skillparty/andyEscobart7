@@ -2,6 +2,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import type * as React from "react";
 import { useState } from "react";
 import { formatMoney } from "~/lib/money";
+import { IguanaAccountant } from "./IguanaAccountant";
 
 const SAMPLE_ROWS = [
   { label: "Cuenta de ahorros", amount: 124050 },
@@ -70,6 +71,12 @@ export function LoginScreen() {
         className="flex flex-col justify-center border-t border-line bg-card px-6 py-16 sm:px-12 lg:border-l lg:border-t-0"
       >
         <div className="mx-auto w-full max-w-sm">
+          <div
+            className="rise-in mb-8 flex justify-center text-ink-soft"
+            style={{ animationDelay: "40ms" }}
+          >
+            <IguanaAccountant />
+          </div>
           <h2 className="font-display text-2xl font-semibold">
             Entra a tu libreta
           </h2>

@@ -58,9 +58,79 @@
     }
   }
 
+  /* Iguana contable: respiración suave del SVG completo */
+  .iguana {
+    transform-origin: 60% 80%;
+    animation: iguana-breathe 4s ease-in-out infinite;
+  }
+
+  @keyframes iguana-breathe {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-2px) rotate(-0.6deg);
+    }
+  }
+
+  /* Brazo que teclea: pequeño golpeteo */
+  .iguana-arm {
+    transform-origin: 96px 110px;
+    animation: iguana-type 0.5s ease-in-out infinite;
+  }
+
+  @keyframes iguana-type {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    50% {
+      transform: rotate(5deg);
+    }
+  }
+
+  /* Símbolos de dinero que suben y se desvanecen, escalonados */
+  .iguana-sym {
+    animation: iguana-float 3s ease-in-out infinite;
+    opacity: 0;
+  }
+  .iguana-sym-1 {
+    animation-delay: 0s;
+  }
+  .iguana-sym-2 {
+    animation-delay: 1s;
+  }
+  .iguana-sym-3 {
+    animation-delay: 2s;
+  }
+
+  @keyframes iguana-float {
+    0% {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    25% {
+      opacity: 1;
+    }
+    60% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .rise-in {
+    .rise-in,
+    .iguana,
+    .iguana-arm,
+    .iguana-sym {
       animation: none;
+    }
+    .iguana-sym {
+      opacity: 1;
     }
   }
 }
