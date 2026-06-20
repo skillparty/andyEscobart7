@@ -250,8 +250,12 @@ function PayableForm({ onDone }: { onDone: () => void }) {
     }
   };
 
+  const parsedPreview = parseAmount(amount);
+  const previewAmount =
+    parsedPreview !== null ? formatMoney(parsedPreview) : formatMoney(0);
+
   return (
-    <form onSubmit={handleSubmit} className="grid gap-3">
+    <form onSubmit={handleSubmit} className="grid gap-4">
       <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
         <div>
           <label htmlFor="payable-name" className={LABEL_CLASS}>
@@ -291,6 +295,25 @@ function PayableForm({ onDone }: { onDone: () => void }) {
           className={INPUT_CLASS}
         />
       </div>
+
+      {/* Vista previa de la fila */}
+      <div className="flex items-center gap-3 rounded-xl border border-dashed border-line bg-paper/60 p-4">
+        <Monogram name={creditorName || "?"} tone="debt" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium">
+            {creditorName.trim() || "Nombre del acreedor"}
+          </span>
+          {reason.trim() ? (
+            <span className="block truncate text-xs text-ink-soft">
+              {reason}
+            </span>
+          ) : null}
+        </span>
+        <span className="shrink-0 font-medium tabular-nums text-debt">
+          {previewAmount}
+        </span>
+      </div>
+
       <div className="flex items-center justify-between gap-3">
         {error ? <p className="text-xs text-debt">{error}</p> : <span />}
         <SubmitButton isSaving={isSaving} />
