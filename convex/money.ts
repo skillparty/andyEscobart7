@@ -25,3 +25,19 @@ export function assertCents(amount: number, label = "El saldo"): void {
     throw new Error(`${label} excede el límite permitido`);
   }
 }
+
+/**
+ * Saldo de cuenta: entero, cero o positivo, dentro del límite.
+ * Las cuentas de efectivo no pueden quedar en negativo.
+ */
+export function assertBalanceCents(amount: number, label = "El saldo"): void {
+  if (!Number.isInteger(amount)) {
+    throw new Error(`${label} debe ser un monto válido en centavos`);
+  }
+  if (amount < 0) {
+    throw new Error(`${label} no puede ser negativo`);
+  }
+  if (amount > MAX_CENTS) {
+    throw new Error(`${label} excede el límite permitido`);
+  }
+}
