@@ -109,6 +109,78 @@ interface ExportMenuProps {
   isExporting: boolean;
 }
 
+function DownloadIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
+    </svg>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg
+      className="animate-spin"
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        strokeWidth="3"
+        opacity="0.25"
+      />
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function ExportOption({
+  title,
+  subtitle,
+  onClick,
+}: {
+  title: string;
+  subtitle: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-line/30"
+    >
+      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-ink/5 text-ink-soft">
+        <DownloadIcon />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-medium">{title}</span>
+        <span className="block truncate text-xs text-ink-soft">{subtitle}</span>
+      </span>
+    </button>
+  );
+}
+
 function ExportMenu({ onExport, isExporting }: ExportMenuProps) {
   const [open, setOpen] = useState(false);
 
@@ -118,9 +190,13 @@ function ExportMenu({ onExport, isExporting }: ExportMenuProps) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         disabled={isExporting}
-        className="rounded-lg border border-line px-3 py-1.5 text-sm font-semibold transition-colors duration-150 hover:border-ink/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:opacity-50"
+        aria-expanded={open}
+        className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-semibold transition-colors duration-150 hover:border-ink/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:opacity-50"
       >
-        {isExporting ? "Exportando…" : "PDF ↓"}
+        {isExporting ? <Spinner /> : <DownloadIcon />}
+        <span className="hidden sm:inline">
+          {isExporting ? "Exportando…" : "PDF"}
+        </span>
       </button>
       {open && (
         <>
@@ -129,27 +205,26 @@ function ExportMenu({ onExport, isExporting }: ExportMenuProps) {
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
-          <div className="absolute right-0 z-20 mt-1 w-40 rounded-xl border border-line bg-card shadow-lg">
-            <button
-              type="button"
+          <div className="absolute right-0 z-20 mt-2 w-64 rounded-xl border border-line bg-card p-1 shadow-lg">
+            <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-ink-soft">
+              Exportar resumen
+            </p>
+            <ExportOption
+              title="Esta semana"
+              subtitle="Movimientos de la semana actual"
               onClick={() => {
                 setOpen(false);
                 void onExport("weekly");
               }}
-              className="w-full rounded-t-xl px-4 py-2.5 text-left text-sm font-medium transition-colors hover:bg-line/30"
-            >
-              Esta semana
-            </button>
-            <button
-              type="button"
+            />
+            <ExportOption
+              title="Este mes"
+              subtitle="Movimientos del mes en curso"
               onClick={() => {
                 setOpen(false);
                 void onExport("monthly");
               }}
-              className="w-full rounded-b-xl border-t border-line px-4 py-2.5 text-left text-sm font-medium transition-colors hover:bg-line/30"
-            >
-              Este mes
-            </button>
+            />
           </div>
         </>
       )}
