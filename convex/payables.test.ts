@@ -232,3 +232,29 @@ describe("payables.create validación", () => {
     ).rejects.toThrow(/no autenticado/i);
   });
 });
+
+describe("payables.remove (soft delete)", () => {
+  test("oculta la deuda de la lista pero conserva la fila", async () => {
+    const t = convexTest(schema, modules);
+    const { userId, as } = await withUser(t);
+
+    const id = await as.mutation(api.payables.create, {
+      creditorName: "Carlos",
+      reason: "Préstamo",
+      amount: 45000,
+    });
+
+    await as.mutation(api.payables.remove, { id });
+
+    expect(await as.query(api.payables.list)).toHaveLength(0);
+
+    const rows = await t.run(async (ctx) =>
+      ctx.db
+        .query("payables")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect(),
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].archivedAt).toEqual(expect.any(Number));
+  });
+});

@@ -7,11 +7,12 @@ export const list = query({
   args: {},
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
-    return await ctx.db
+    const accounts = await ctx.db
       .query("accounts")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
       .collect();
+    return accounts.filter((account) => account.archivedAt === undefined);
   },
 });
 
@@ -89,6 +90,8 @@ export const remove = mutation({
     if (account === null || account.userId !== userId) {
       throw new Error("Cuenta no encontrada");
     }
-    await ctx.db.delete(args.id);
+    // Soft delete: se conserva la fila (las transacciones la referencian) y se
+    // oculta de las listas.
+    await ctx.db.patch(args.id, { archivedAt: Date.now() });
   },
 });

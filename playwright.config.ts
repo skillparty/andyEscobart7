@@ -13,7 +13,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: process.env.CI ? "github" : "html",
+  // "list" no escribe artefactos en el repo (el reporter "html" genera
+  // playwright-report/, que el linter intentaría analizar). Para ver el reporte
+  // HTML: bun run test:e2e --reporter=html
+  reporter: process.env.CI ? "github" : "list",
   use: {
     baseURL,
     trace: "on-first-retry",

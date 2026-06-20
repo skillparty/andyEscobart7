@@ -84,6 +84,33 @@ describe("accounts.update", () => {
   });
 });
 
+describe("accounts.remove (soft delete)", () => {
+  test("oculta la cuenta de la lista pero conserva la fila", async () => {
+    const t = convexTest(schema, modules);
+    const { userId, as } = await withUser(t);
+
+    const id = await as.mutation(api.accounts.create, {
+      name: "Ahorros",
+      balance: 50000,
+    });
+
+    await as.mutation(api.accounts.remove, { id });
+
+    // Ya no aparece en la lista del usuario.
+    expect(await as.query(api.accounts.list)).toHaveLength(0);
+
+    // Pero la fila sigue en la base con archivedAt marcado.
+    const rows = await t.run(async (ctx) =>
+      ctx.db
+        .query("accounts")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect(),
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].archivedAt).toEqual(expect.any(Number));
+  });
+});
+
 describe("aislamiento por usuario", () => {
   test("un usuario no puede editar la cuenta de otro", async () => {
     const t = convexTest(schema, modules);

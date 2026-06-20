@@ -10,6 +10,9 @@ export default defineSchema({
     name: v.string(),
     balance: v.number(),
     bankSlug: v.optional(v.string()),
+    // Soft delete: si está definido, la fila se conserva para auditoría pero
+    // se oculta de las listas.
+    archivedAt: v.optional(v.number()),
   }).index("by_user", ["userId"]),
 
   receivables: defineTable({
@@ -17,6 +20,7 @@ export default defineSchema({
     debtorName: v.string(),
     amount: v.number(),
     note: v.optional(v.string()),
+    archivedAt: v.optional(v.number()),
   }).index("by_user", ["userId"]),
 
   payables: defineTable({
@@ -24,6 +28,7 @@ export default defineSchema({
     creditorName: v.string(),
     reason: v.string(),
     amount: v.number(),
+    archivedAt: v.optional(v.number()),
   }).index("by_user", ["userId"]),
 
   transactions: defineTable({

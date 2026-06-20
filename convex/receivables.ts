@@ -7,11 +7,14 @@ export const list = query({
   args: {},
   handler: async (ctx) => {
     const userId = await requireUserId(ctx);
-    return await ctx.db
+    const receivables = await ctx.db
       .query("receivables")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
       .collect();
+    return receivables.filter(
+      (receivable) => receivable.archivedAt === undefined,
+    );
   },
 });
 
@@ -101,6 +104,7 @@ export const remove = mutation({
     if (receivable === null || receivable.userId !== userId) {
       throw new Error("Cuenta por cobrar no encontrada");
     }
-    await ctx.db.delete(args.id);
+    // Soft delete: se conserva para auditoría y se oculta de las listas.
+    await ctx.db.patch(args.id, { archivedAt: Date.now() });
   },
 });
