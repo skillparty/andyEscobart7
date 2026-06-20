@@ -1,11 +1,10 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { lazy, Suspense, useState } from "react";
-import { TONE_CLASSES, type Tone } from "~/components/ui/tones";
-import { formatMoney } from "~/lib/money";
 import { exportPdf } from "~/lib/pdf";
 import { api } from "../../../convex/_generated/api";
 import { AccountsSection } from "./AccountsSection";
+import { HeroPanel } from "./HeroPanel";
 import { HistorySection } from "./HistorySection";
 import { PayablesSection } from "./PayablesSection";
 import { ReceivablesSection } from "./ReceivablesSection";
@@ -85,84 +84,37 @@ export function Dashboard() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 pb-20">
-        <section
-          aria-label="Resumen general"
-          className="flex flex-wrap items-end justify-between gap-x-12 gap-y-6 py-10 sm:py-14"
-        >
-          <div className="rise-in">
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-ink-soft">
-              Balance neto
-            </p>
-            <p
-              className={`mt-2 font-display text-[clamp(2.5rem,1.5rem+3.5vw,4.5rem)] font-semibold leading-none tabular-nums tracking-tight ${
-                netBalance < 0 ? "text-debt" : "text-ink"
-              }`}
-            >
-              {formatMoney(netBalance)}
-            </p>
-            <p className="mt-2 text-sm text-ink-soft">
-              En cuentas, más lo que te deben, menos lo que debes.
-            </p>
-          </div>
-          <dl
-            className="rise-in flex flex-wrap gap-3"
-            style={{ animationDelay: "80ms" }}
-          >
-            <SummaryChip
-              label="En cuentas"
-              amount={totalAccounts}
-              tone="positive"
-            />
-            <SummaryChip
-              label="Te deben"
-              amount={totalReceivable}
-              tone="claim"
-            />
-            <SummaryChip label="Debes" amount={totalPayable} tone="debt" />
-          </dl>
-        </section>
+        <div className="pt-8 sm:pt-10">
+          <HeroPanel
+            name={viewer?.name ?? null}
+            netBalance={netBalance}
+            totalAccounts={totalAccounts}
+            totalReceivable={totalReceivable}
+            totalPayable={totalPayable}
+          />
+        </div>
 
-        <div className="grid gap-5 lg:grid-cols-2">
-          <AccountsSection accounts={accounts} className="lg:col-span-2" />
-          <ReceivablesSection receivables={receivables} accounts={accounts} />
-          <PayablesSection payables={payables} accounts={accounts} />
-
-          <Suspense fallback={<ChartsFallback />}>
-            <ChartsSection
-              totalAccounts={totalAccounts}
-              totalReceivable={totalReceivable}
-              totalPayable={totalPayable}
-              monthlyData={monthlyData}
-            />
-          </Suspense>
-
-          <div className="lg:col-span-2">
+        {/* Bento: columna izquierda (lo que tengo + historial), derecha
+            (gráfico + deudas por cobrar/pagar). */}
+        <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1.5fr_1fr]">
+          <div className="grid gap-5">
+            <AccountsSection accounts={accounts} />
             <HistorySection />
+          </div>
+          <div className="grid gap-5">
+            <Suspense fallback={<ChartsFallback />}>
+              <ChartsSection
+                totalAccounts={totalAccounts}
+                totalReceivable={totalReceivable}
+                totalPayable={totalPayable}
+                monthlyData={monthlyData}
+              />
+            </Suspense>
+            <ReceivablesSection receivables={receivables} accounts={accounts} />
+            <PayablesSection payables={payables} accounts={accounts} />
           </div>
         </div>
       </main>
-    </div>
-  );
-}
-
-interface SummaryChipProps {
-  label: string;
-  amount: number;
-  tone: Tone;
-}
-
-function SummaryChip({ label, amount, tone }: SummaryChipProps) {
-  const toneClasses = TONE_CLASSES[tone];
-  return (
-    <div className={`rounded-xl px-4 py-3 ${toneClasses.softBg}`}>
-      <dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
-        {label}
-      </dt>
-      <dd
-        className={`mt-0.5 font-display text-xl font-semibold tabular-nums ${toneClasses.text}`}
-      >
-        {formatMoney(amount)}
-      </dd>
     </div>
   );
 }
@@ -223,7 +175,7 @@ function ExportMenu({ onExport, isExporting }: ExportMenuProps) {
 // Placeholder con la misma huella que ChartsSection mientras carga el chunk.
 function ChartsFallback() {
   return (
-    <div className="grid gap-5 lg:grid-cols-2 lg:col-span-2" aria-hidden="true">
+    <div className="grid gap-5" aria-hidden="true">
       <div className="h-48 animate-pulse rounded-2xl border border-line bg-card" />
       <div className="h-48 animate-pulse rounded-2xl border border-line bg-card" />
     </div>

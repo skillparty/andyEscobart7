@@ -32,7 +32,7 @@ export function LedgerCard({
   return (
     <section
       aria-label={title}
-      className={`rise-in flex flex-col rounded-2xl border border-line bg-card p-6 shadow-[0_1px_3px_oklch(0%_0_0/0.04)] sm:p-7 ${className}`}
+      className={`rise-in flex flex-col rounded-2xl border border-line bg-card p-6 shadow-[0_1px_3px_oklch(0%_0_0/0.04)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_28px_oklch(0%_0_0/0.07)] sm:p-7 ${className}`}
     >
       <header className="flex items-start justify-between gap-4">
         <div>

@@ -45,10 +45,7 @@ export function ChartsSection({
   ].filter((d) => d.value > 0);
 
   return (
-    <section
-      aria-label="Gráficos financieros"
-      className="grid gap-5 lg:grid-cols-2 lg:col-span-2"
-    >
+    <section aria-label="Gráficos financieros" className="grid gap-5">
       <div className="rounded-2xl border border-line bg-card p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-soft">
           Distribución
