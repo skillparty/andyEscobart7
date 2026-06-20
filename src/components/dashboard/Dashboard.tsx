@@ -1,15 +1,19 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { TONE_CLASSES, type Tone } from "~/components/ui/tones";
 import { formatMoney } from "~/lib/money";
 import { exportPdf } from "~/lib/pdf";
 import { api } from "../../../convex/_generated/api";
 import { AccountsSection } from "./AccountsSection";
-import { ChartsSection } from "./ChartsSection";
 import { HistorySection } from "./HistorySection";
 import { PayablesSection } from "./PayablesSection";
 import { ReceivablesSection } from "./ReceivablesSection";
+
+// Recharts es pesado (~100kb gz). Se carga aparte del bundle inicial.
+const ChartsSection = lazy(() =>
+  import("./ChartsSection").then((m) => ({ default: m.ChartsSection })),
+);
 
 export function Dashboard() {
   const { signOut } = useAuthActions();
@@ -123,12 +127,14 @@ export function Dashboard() {
           <ReceivablesSection receivables={receivables} accounts={accounts} />
           <PayablesSection payables={payables} accounts={accounts} />
 
-          <ChartsSection
-            totalAccounts={totalAccounts}
-            totalReceivable={totalReceivable}
-            totalPayable={totalPayable}
-            monthlyData={monthlyData}
-          />
+          <Suspense fallback={<ChartsFallback />}>
+            <ChartsSection
+              totalAccounts={totalAccounts}
+              totalReceivable={totalReceivable}
+              totalPayable={totalPayable}
+              monthlyData={monthlyData}
+            />
+          </Suspense>
 
           <div className="lg:col-span-2">
             <HistorySection />
@@ -210,6 +216,16 @@ function ExportMenu({ onExport, isExporting }: ExportMenuProps) {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// Placeholder con la misma huella que ChartsSection mientras carga el chunk.
+function ChartsFallback() {
+  return (
+    <div className="grid gap-5 lg:grid-cols-2 lg:col-span-2" aria-hidden="true">
+      <div className="h-48 animate-pulse rounded-2xl border border-line bg-card" />
+      <div className="h-48 animate-pulse rounded-2xl border border-line bg-card" />
     </div>
   );
 }
