@@ -46,6 +46,30 @@ bun run test      # Vitest + convex-test (lógica de dinero y mutaciones)
 bun run build     # vite build + tsc --noEmit
 ```
 
+### Tests E2E (Playwright)
+
+Los E2E (`tests/e2e/`) cubren el flujo real en el navegador: login, crear
+cuenta, registrar y pagar una deuda, e historial. Como el login normal es solo
+Google OAuth, los tests usan un provider de prueba (email + contraseña) que
+**solo** se activa cuando el deployment de Convex tiene `AUTH_E2E="true"`. En
+producción esa variable no existe, así que el provider nunca queda expuesto.
+
+Preparación (una sola vez):
+
+```bash
+bunx playwright install        # navegadores
+bunx convex env set AUTH_E2E true   # en tu deployment de DESARROLLO, nunca en prod
+```
+
+Ejecución:
+
+```bash
+bun run test:e2e        # corre los specs (levanta dev server con VITE_E2E=true)
+bun run test:e2e:ui     # modo interactivo
+```
+
+> Nunca configures `AUTH_E2E` en el deployment de producción.
+
 ## Deploy en Vercel
 
 El repo incluye `vercel.json`: `vite build` genera `dist/client` (estáticos) y `dist/server/server.js` (handler SSR). Vercel sirve los estáticos por filesystem y manda el resto a la función `api/index.ts`, que delega en ese handler. Convex aloja el backend; Vercel solo sirve el frontend SSR apuntando a la URL de producción de Convex.

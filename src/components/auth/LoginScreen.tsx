@@ -1,4 +1,5 @@
 import { useAuthActions } from "@convex-dev/auth/react";
+import type * as React from "react";
 import { useState } from "react";
 import { formatMoney } from "~/lib/money";
 
@@ -87,9 +88,55 @@ export function LoginScreen() {
           <p className="mt-6 text-xs leading-relaxed text-ink-soft">
             Tus datos son privados: solo tú puedes ver tus cuentas y deudas.
           </p>
+          {import.meta.env.VITE_E2E === "true" ? <E2ELogin /> : null}
         </div>
       </section>
     </main>
+  );
+}
+
+/**
+ * Formulario de acceso por email + contraseña para tests E2E. El bundle de
+ * producción no define VITE_E2E, por lo que este árbol se elimina por
+ * tree-shaking y nunca llega al usuario final.
+ */
+function E2ELogin() {
+  const { signIn } = useAuthActions();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    void signIn("password", { email, password, flow: "signUp" });
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      data-testid="e2e-login"
+      className="mt-8 grid gap-2 border-t border-line pt-6"
+    >
+      <input
+        aria-label="E2E email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="rounded-lg border border-line px-3 py-2 text-sm"
+      />
+      <input
+        aria-label="E2E password"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        className="rounded-lg border border-line px-3 py-2 text-sm"
+      />
+      <button
+        type="submit"
+        className="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-paper"
+      >
+        Entrar (E2E)
+      </button>
+    </form>
   );
 }
 
