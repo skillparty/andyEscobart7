@@ -2,7 +2,7 @@ import { useMutation } from "convex/react";
 import type * as React from "react";
 import { useState } from "react";
 import { BankLogo } from "~/components/ui/BankLogo";
-import { BankSelect } from "~/components/ui/BankSelect";
+import { BankPicker } from "~/components/ui/BankPicker";
 import { RowButton, SubmitButton } from "~/components/ui/buttons";
 import { EmptyState, LedgerCard } from "~/components/ui/LedgerCard";
 import { INPUT_CLASS, LABEL_CLASS } from "~/components/ui/tones";
@@ -181,19 +181,18 @@ function AccountForm({ onDone }: { onDone: () => void }) {
     }
   };
 
+  const parsedPreview = parseAmount(balance);
+  const previewBalance =
+    parsedPreview !== null ? formatMoney(parsedPreview) : formatMoney(0);
+
   return (
-    <form onSubmit={handleSubmit} className="grid gap-3">
-      <div className="grid gap-3 sm:grid-cols-[1fr_1fr]">
-        <div>
-          <label htmlFor="account-bank" className={LABEL_CLASS}>
-            Banco
-          </label>
-          <BankSelect
-            id="account-bank"
-            value={bankSlug}
-            onChange={setBankSlug}
-          />
-        </div>
+    <form onSubmit={handleSubmit} className="grid gap-4">
+      <div>
+        <span className={LABEL_CLASS}>Banco (opcional)</span>
+        <BankPicker value={bankSlug} onChange={setBankSlug} />
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor="account-name" className={LABEL_CLASS}>
             Nombre / tipo de cuenta
@@ -206,8 +205,6 @@ function AccountForm({ onDone }: { onDone: () => void }) {
             className={INPUT_CLASS}
           />
         </div>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
         <div>
           <label htmlFor="account-balance" className={LABEL_CLASS}>
             Saldo actual
@@ -221,9 +218,38 @@ function AccountForm({ onDone }: { onDone: () => void }) {
             className={INPUT_CLASS}
           />
         </div>
+      </div>
+
+      {/* Vista previa de cómo quedará la tarjeta */}
+      <div className="rounded-xl border border-dashed border-line bg-paper/60 p-4">
+        <div className="flex items-center gap-3">
+          {bankSlug ? (
+            <BankLogo slug={bankSlug} size={32} className="shrink-0" />
+          ) : (
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-line/60 text-xs font-semibold text-ink-soft">
+              {name.trim().slice(0, 1).toUpperCase() || "·"}
+            </span>
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium">
+              {name.trim() || "Nombre de la cuenta"}
+            </span>
+            {bankSlug && (
+              <span className="block truncate text-xs text-ink-soft">
+                {getBankName(bankSlug)}
+              </span>
+            )}
+          </span>
+        </div>
+        <p className="mt-3 font-display text-2xl font-semibold tabular-nums tracking-tight text-ink">
+          {previewBalance}
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between gap-3">
+        {error ? <p className="text-xs text-debt">{error}</p> : <span />}
         <SubmitButton isSaving={isSaving} />
       </div>
-      {error && <p className="text-xs text-debt">{error}</p>}
     </form>
   );
 }
