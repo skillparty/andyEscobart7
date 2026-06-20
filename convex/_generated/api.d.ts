@@ -12,6 +12,7 @@ import type * as accounts from "../accounts.js";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as migrations from "../migrations.js";
+import type * as money from "../money.js";
 import type * as payables from "../payables.js";
 import type * as receivables from "../receivables.js";
 import type * as transactions from "../transactions.js";
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
   migrations: typeof migrations;
+  money: typeof money;
   payables: typeof payables;
   receivables: typeof receivables;
   transactions: typeof transactions;
