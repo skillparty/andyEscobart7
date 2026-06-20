@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { assertPositiveCents } from "./money";
 import { requireUserId } from "./users";
 
 export const list = query({
@@ -26,9 +27,7 @@ export const create = mutation({
     if (debtorName.length === 0) {
       throw new Error("El nombre del deudor es obligatorio");
     }
-    if (args.amount <= 0) {
-      throw new Error("El monto debe ser mayor que cero");
-    }
+    assertPositiveCents(args.amount);
     return await ctx.db.insert("receivables", {
       userId,
       debtorName,
@@ -53,9 +52,7 @@ export const collect = mutation({
     }
 
     const collectedAmount = args.amount ?? receivable.amount;
-    if (!Number.isInteger(collectedAmount) || collectedAmount <= 0) {
-      throw new Error("El monto a cobrar debe ser mayor que cero");
-    }
+    assertPositiveCents(collectedAmount, "El monto a cobrar");
     if (collectedAmount > receivable.amount) {
       throw new Error("El monto supera lo que te deben");
     }

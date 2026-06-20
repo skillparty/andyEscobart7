@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { assertCents } from "./money";
 import { requireUserId } from "./users";
 
 export const list = query({
@@ -26,6 +27,7 @@ export const create = mutation({
     if (name.length === 0) {
       throw new Error("El nombre de la cuenta es obligatorio");
     }
+    assertCents(args.balance, "El saldo");
     return await ctx.db.insert("accounts", {
       userId,
       name,
@@ -50,6 +52,10 @@ export const update = mutation({
     }
 
     const newName = args.name !== undefined ? args.name.trim() : account.name;
+
+    if (args.balance !== undefined) {
+      assertCents(args.balance, "El saldo");
+    }
 
     await ctx.db.patch(args.id, {
       ...(args.name !== undefined ? { name: newName } : {}),
