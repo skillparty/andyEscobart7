@@ -4,6 +4,7 @@ import { useState } from "react";
 import { BankLogo } from "~/components/ui/BankLogo";
 import { RowButton, SubmitButton } from "~/components/ui/buttons";
 import { EmptyState, LedgerCard } from "~/components/ui/LedgerCard";
+import { Monogram } from "~/components/ui/Monogram";
 import { INPUT_CLASS, LABEL_CLASS } from "~/components/ui/tones";
 import { centsToInput, formatMoney, parseAmount } from "~/lib/money";
 import { api } from "../../../convex/_generated/api";
@@ -52,6 +53,7 @@ function PayableRow({
   accounts: Doc<"accounts">[] | undefined;
 }) {
   const payMutation = useMutation(api.payables.pay);
+  const removePayable = useMutation(api.payables.remove);
   const [isPaying, setIsPaying] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [payAmount, setPayAmount] = useState("");
@@ -93,8 +95,9 @@ function PayableRow({
   if (isPaying) {
     return (
       <li className="py-3">
-        <div className="mb-2 flex items-start justify-between gap-2">
-          <span className="min-w-0">
+        <div className="mb-3 flex items-center gap-3">
+          <Monogram name={item.creditorName} tone="debt" />
+          <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium">
               {item.creditorName}
             </span>
@@ -180,8 +183,9 @@ function PayableRow({
   }
 
   return (
-    <li className="group flex items-baseline py-3">
-      <span className="min-w-0">
+    <li className="group flex items-center gap-3 py-3">
+      <Monogram name={item.creditorName} tone="debt" />
+      <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium">
           {item.creditorName}
         </span>
@@ -189,17 +193,23 @@ function PayableRow({
           {item.reason}
         </span>
       </span>
-      <span className="ledger-dots" />
-      <span className="font-medium tabular-nums text-debt">
+      <span className="shrink-0 font-medium tabular-nums text-debt">
         {formatMoney(item.amount)}
       </span>
-      <span className="ml-3 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+      <span className="flex shrink-0 gap-1 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
         <RowButton
           type="button"
           label={`Pagar: ${item.creditorName}`}
           onClick={startPaying}
         >
           ✓
+        </RowButton>
+        <RowButton
+          type="button"
+          label={`Descartar sin pagar: ${item.creditorName}`}
+          onClick={() => void removePayable({ id: item._id })}
+        >
+          ✕
         </RowButton>
       </span>
     </li>

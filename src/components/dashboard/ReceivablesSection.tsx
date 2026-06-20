@@ -4,6 +4,7 @@ import { useState } from "react";
 import { BankLogo } from "~/components/ui/BankLogo";
 import { RowButton, SubmitButton } from "~/components/ui/buttons";
 import { EmptyState, LedgerCard } from "~/components/ui/LedgerCard";
+import { Monogram } from "~/components/ui/Monogram";
 import { INPUT_CLASS, LABEL_CLASS } from "~/components/ui/tones";
 import { centsToInput, formatMoney, parseAmount } from "~/lib/money";
 import { api } from "../../../convex/_generated/api";
@@ -98,8 +99,9 @@ function ReceivableRow({
     const selected = accounts?.find((a) => a._id === selectedAccountId);
     return (
       <li className="py-3">
-        <div className="mb-2 flex items-start justify-between gap-2">
-          <span className="min-w-0">
+        <div className="mb-3 flex items-center gap-3">
+          <Monogram name={item.debtorName} tone="claim" />
+          <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium">
               {item.debtorName}
             </span>
@@ -187,8 +189,9 @@ function ReceivableRow({
   }
 
   return (
-    <li className="group flex items-baseline py-3">
-      <span className="min-w-0">
+    <li className="group flex items-center gap-3 py-3">
+      <Monogram name={item.debtorName} tone="claim" />
+      <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium">
           {item.debtorName}
         </span>
@@ -198,11 +201,10 @@ function ReceivableRow({
           </span>
         ) : null}
       </span>
-      <span className="ledger-dots" />
-      <span className="font-medium tabular-nums text-claim">
+      <span className="shrink-0 font-medium tabular-nums text-claim">
         {formatMoney(item.amount)}
       </span>
-      <span className="ml-3 flex gap-1 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+      <span className="flex shrink-0 gap-1 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
         <RowButton
           type="button"
           label={`Registrar cobro de ${item.debtorName}`}
