@@ -37,7 +37,7 @@ export function AccountsSection({ accounts, className }: AccountsSectionProps) {
       ) : accounts.length === 0 ? (
         <EmptyState message="Aún no tienes cuentas. Agrega la primera." />
       ) : (
-        <ul className="divide-y divide-line/70">
+        <ul className="grid gap-3 pt-1 sm:grid-cols-2">
           {accounts.map((account) => (
             <AccountRow key={account._id} account={account} />
           ))}
@@ -72,17 +72,15 @@ function AccountRow({ account }: { account: Doc<"accounts"> }) {
 
   if (isEditing) {
     return (
-      <li className="py-3">
+      <li className="rounded-xl border border-line bg-paper p-4">
+        <p className="mb-2 truncate text-sm font-medium">{account.name}</p>
         <form onSubmit={handleSave} className="flex items-center gap-2">
-          <span className="flex-1 truncate text-sm font-medium">
-            {account.name}
-          </span>
           <input
             value={draftBalance}
             onChange={(e) => setDraftBalance(e.target.value)}
             inputMode="decimal"
             aria-label={`Nuevo saldo de ${account.name}`}
-            className={`${INPUT_CLASS} max-w-32 text-right`}
+            className={`${INPUT_CLASS} flex-1 text-right`}
             // biome-ignore lint/a11y/noAutofocus: el usuario acaba de pedir editar
             autoFocus
           />
@@ -96,54 +94,55 @@ function AccountRow({ account }: { account: Doc<"accounts"> }) {
           >
             ✕
           </RowButton>
-          {error && <span className="text-xs text-debt">{error}</span>}
         </form>
+        {error && <p className="mt-2 text-xs text-debt">{error}</p>}
       </li>
     );
   }
 
   return (
-    <li className="group flex items-center py-3 gap-3">
-      {account.bankSlug ? (
-        <BankLogo slug={account.bankSlug} size={28} className="shrink-0" />
-      ) : (
-        <span className="size-7 shrink-0 rounded-full bg-line/60" />
-      )}
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-medium">
-          {account.name}
-        </span>
-        {account.bankSlug && (
-          <span className="block truncate text-xs text-ink-soft">
-            {getBankName(account.bankSlug)}
+    <li className="group relative rounded-xl border border-line bg-paper p-4 transition-colors duration-150 hover:border-ink/20">
+      <div className="flex items-center gap-3">
+        {account.bankSlug ? (
+          <BankLogo slug={account.bankSlug} size={32} className="shrink-0" />
+        ) : (
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-line/60 text-xs font-semibold text-ink-soft">
+            {account.name.trim().slice(0, 1).toUpperCase() || "·"}
           </span>
         )}
-      </span>
-      <span className="ledger-dots" />
-      <span
-        className={`font-medium tabular-nums shrink-0 ${account.balance < 0 ? "text-debt" : "text-ink"}`}
-      >
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium">
+            {account.name}
+          </span>
+          {account.bankSlug && (
+            <span className="block truncate text-xs text-ink-soft">
+              {getBankName(account.bankSlug)}
+            </span>
+          )}
+        </span>
+        <span className="flex shrink-0 gap-1 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+          <RowButton
+            type="button"
+            label={`Editar saldo de ${account.name}`}
+            onClick={() => {
+              setDraftBalance(centsToInput(account.balance));
+              setIsEditing(true);
+            }}
+          >
+            ✎
+          </RowButton>
+          <RowButton
+            type="button"
+            label={`Eliminar cuenta ${account.name}`}
+            onClick={() => void removeAccount({ id: account._id })}
+          >
+            ✕
+          </RowButton>
+        </span>
+      </div>
+      <p className="mt-3 font-display text-2xl font-semibold tabular-nums tracking-tight text-ink">
         {formatMoney(account.balance)}
-      </span>
-      <span className="flex gap-1 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100 shrink-0">
-        <RowButton
-          type="button"
-          label={`Editar saldo de ${account.name}`}
-          onClick={() => {
-            setDraftBalance(centsToInput(account.balance));
-            setIsEditing(true);
-          }}
-        >
-          ✎
-        </RowButton>
-        <RowButton
-          type="button"
-          label={`Eliminar cuenta ${account.name}`}
-          onClick={() => void removeAccount({ id: account._id })}
-        >
-          ✕
-        </RowButton>
-      </span>
+      </p>
     </li>
   );
 }
