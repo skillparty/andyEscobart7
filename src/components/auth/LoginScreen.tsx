@@ -1,8 +1,11 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import type * as React from "react";
 import { useState } from "react";
+import { BrandMark } from "~/components/ui/BrandMark";
 import { formatMoney } from "~/lib/money";
 import { IguanaAccountant } from "./IguanaAccountant";
+
+const TRUST_CHIPS = ["Privado", "Sin costo", "Bolivianos (BOB)"] as const;
 
 const SAMPLE_ROWS = [
   { label: "Cuenta de ahorros", amount: 124050 },
@@ -20,61 +23,87 @@ export function LoginScreen() {
   };
 
   return (
-    <main className="grid min-h-dvh lg:grid-cols-[1.2fr_1fr]">
+    <main className="grid min-h-dvh bg-paper lg:grid-cols-[1.1fr_1fr]">
       <section
         aria-labelledby="login-heading"
-        className="flex flex-col justify-center px-6 py-16 sm:px-12 lg:px-20"
+        className="relative flex flex-col justify-center overflow-hidden px-6 py-16 sm:px-12 lg:px-20"
       >
-        <p className="rise-in mb-6 text-xs font-semibold uppercase tracking-[0.3em] text-ink-soft">
-          Cuentas Claras
-        </p>
-        <h1
-          id="login-heading"
-          className="rise-in font-display text-[clamp(2.5rem,1.5rem+4vw,5rem)] font-semibold leading-[1.05] tracking-tight"
-          style={{ animationDelay: "60ms" }}
-        >
-          Cuentas claras,
-          <br />
-          <em className="text-positive">amistades largas.</em>
-        </h1>
-        <p
-          className="rise-in mt-6 max-w-md text-lg leading-relaxed text-ink-soft"
-          style={{ animationDelay: "120ms" }}
-        >
-          Tus cuentas bancarias, lo que te deben y lo que debes — todo en una
-          sola libreta, siempre al día.
-        </p>
-
-        <ul
-          className="rise-in mt-12 max-w-md space-y-3 border-t border-line pt-6"
-          style={{ animationDelay: "180ms" }}
+        {/* Atmósfera cálida detrás del titular */}
+        <div
           aria-hidden="true"
-        >
-          {SAMPLE_ROWS.map((row) => (
-            <li key={row.label} className="flex items-baseline text-sm">
-              <span className="text-ink-soft">{row.label}</span>
-              <span className="ledger-dots" />
-              <span
-                className={`font-medium tabular-nums ${
-                  row.amount < 0 ? "text-debt" : "text-positive"
-                }`}
+          className="pointer-events-none absolute -left-24 -top-24 size-80 rounded-full bg-positive-soft opacity-50 blur-3xl"
+        />
+
+        <div className="relative">
+          <div
+            className="rise-in mb-8 flex items-center gap-2.5"
+            style={{ animationDelay: "20ms" }}
+          >
+            <BrandMark size={32} />
+            <span className="text-sm font-semibold uppercase tracking-[0.2em] text-ink-soft">
+              Cuentas Claras
+            </span>
+          </div>
+
+          <h1
+            id="login-heading"
+            className="rise-in font-display text-[clamp(2.5rem,1.5rem+4vw,5rem)] font-semibold leading-[1.05] tracking-tight"
+            style={{ animationDelay: "60ms" }}
+          >
+            Cuentas claras,
+            <br />
+            <em className="text-positive">amistades largas.</em>
+          </h1>
+          <p
+            className="rise-in mt-6 max-w-md text-lg leading-relaxed text-ink-soft"
+            style={{ animationDelay: "120ms" }}
+          >
+            Tus cuentas bancarias, lo que te deben y lo que debes — todo en una
+            sola libreta, siempre al día.
+          </p>
+
+          <ul
+            className="rise-in mt-7 flex flex-wrap gap-2"
+            style={{ animationDelay: "150ms" }}
+          >
+            {TRUST_CHIPS.map((chip) => (
+              <li
+                key={chip}
+                className="rounded-full border border-line bg-card/60 px-3 py-1 text-xs font-medium text-ink-soft"
               >
-                {formatMoney(row.amount)}
-              </span>
-            </li>
-          ))}
-        </ul>
+                {chip}
+              </li>
+            ))}
+          </ul>
+
+          <ul
+            className="rise-in mt-10 max-w-md space-y-3 border-t border-line pt-6"
+            style={{ animationDelay: "200ms" }}
+            aria-hidden="true"
+          >
+            {SAMPLE_ROWS.map((row) => (
+              <li key={row.label} className="flex items-baseline text-sm">
+                <span className="text-ink-soft">{row.label}</span>
+                <span className="ledger-dots" />
+                <span
+                  className={`font-medium tabular-nums ${
+                    row.amount < 0 ? "text-debt" : "text-positive"
+                  }`}
+                >
+                  {formatMoney(row.amount)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       <section
         aria-label="Iniciar sesión"
-        className="flex flex-col justify-center border-t border-line bg-card px-6 py-16 sm:px-12 lg:border-l lg:border-t-0"
+        className="flex items-center justify-center px-6 py-16 sm:px-12"
       >
-        <div className="mx-auto w-full max-w-sm">
-          <div
-            className="rise-in mb-8 flex justify-center text-ink-soft"
-            style={{ animationDelay: "40ms" }}
-          >
+        <div className="rise-in w-full max-w-sm rounded-3xl border border-line bg-card p-8 shadow-[0_8px_40px_oklch(0%_0_0/0.06)] sm:p-10">
+          <div className="mb-8 flex justify-center text-ink-soft">
             <IguanaAccountant />
           </div>
           <h2 className="font-display text-2xl font-semibold">
