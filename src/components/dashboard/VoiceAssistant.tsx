@@ -1,7 +1,8 @@
 import { useAction, useMutation } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "../../../convex/_generated/api";
 import { formatMoney } from "~/lib/money";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -31,18 +32,20 @@ export function VoiceAssistant() {
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [audioLevels, setAudioLevels] = useState<number[]>(new Array(24).fill(0));
+  const [audioLevels, setAudioLevels] = useState<number[]>(
+    new Array(24).fill(0),
+  );
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const animFrameRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const generateUploadUrl = useMutation(api.storage.generateUploadUrl);
   const processVoice = useAction(api.voiceAI.processVoiceAndExecute);
-
 
   // ── Audio Level Visualization ───────────────────────────────────────────
   const updateLevels = useCallback(() => {
@@ -80,6 +83,7 @@ export function VoiceAssistant() {
 
       // Set up audio analyser for visualization
       const audioCtx = new AudioContext();
+      audioCtxRef.current = audioCtx;
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
@@ -146,9 +150,12 @@ export function VoiceAssistant() {
       recorder.stop();
     });
 
-    // Stop the media stream
+    // Stop the media stream and release the audio context
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
+    void audioCtxRef.current?.close();
+    audioCtxRef.current = null;
+    analyserRef.current = null;
 
     const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
     audioChunksRef.current = [];
@@ -171,22 +178,19 @@ export function VoiceAssistant() {
         throw new Error("Error al subir el audio");
       }
       const { storageId } = (await uploadResponse.json()) as {
-        storageId: string;
+        storageId: Id<"_storage">;
       };
 
       // 2. Process with Gemini via the Convex action
-      const res = await processVoice({
-        storageId: storageId as never, // Id<"_storage"> from the API
-      });
+      const res = await processVoice({ storageId });
       setResult(res as VoiceResult);
       setPhase("result");
-
     } catch (err) {
       console.error("Error processing voice:", err);
       setError(
         err instanceof Error
           ? err.message
-          : "Ocurrió un error al procesar el audio."
+          : "Ocurrió un error al procesar el audio.",
       );
       setPhase("error");
     }
@@ -198,6 +202,8 @@ export function VoiceAssistant() {
       if (timerRef.current) clearInterval(timerRef.current);
       cancelAnimationFrame(animFrameRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      void audioCtxRef.current?.close();
+      audioCtxRef.current = null;
     };
   }, []);
 
@@ -207,6 +213,9 @@ export function VoiceAssistant() {
       mediaRecorderRef.current?.stop();
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
+      void audioCtxRef.current?.close();
+      audioCtxRef.current = null;
+      analyserRef.current = null;
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -249,13 +258,13 @@ export function VoiceAssistant() {
 
       {/* ── Modal Overlay ────────────────────────────────────────────── */}
       {isOpen && (
-        <div className="voice-overlay" role="dialog" aria-label="Asistente de voz">
+        <div
+          className="voice-overlay"
+          role="dialog"
+          aria-label="Asistente de voz"
+        >
           {/* Backdrop */}
-          <div
-            className="voice-backdrop"
-            onClick={close}
-            aria-hidden="true"
-          />
+          <div className="voice-backdrop" onClick={close} aria-hidden="true" />
 
           {/* Content */}
           <div className="voice-modal">
@@ -340,16 +349,16 @@ export function VoiceAssistant() {
                   <div className="voice-spinner" />
                 </div>
                 <h2 className="voice-title">Procesando…</h2>
-                <p className="voice-subtitle">
-                  Analizando tu mensaje con IA
-                </p>
+                <p className="voice-subtitle">Analizando tu mensaje con IA</p>
               </div>
             )}
 
             {/* ── Result ──────────────────────────────────────────── */}
             {phase === "result" && result && (
               <div className="voice-body">
-                <div className={`voice-result-icon ${result.executed ? "voice-result-success" : "voice-result-info"}`}>
+                <div
+                  className={`voice-result-icon ${result.executed ? "voice-result-success" : "voice-result-info"}`}
+                >
                   <span className="text-3xl">
                     {actionLabels[result.action].emoji}
                   </span>
@@ -366,12 +375,9 @@ export function VoiceAssistant() {
                   <div className="voice-data-card">
                     {Object.entries(result.data).map(([key, val]) => {
                       if (val === undefined || val === null) return null;
-                      const isAmount =
-                        key === "amount" || key === "balance";
+                      const isAmount = key === "amount" || key === "balance";
                       const displayVal = isAmount
-                        ? formatMoney(
-                            Math.round(Number(val) * 100),
-                          )
+                        ? formatMoney(Math.round(Number(val) * 100))
                         : String(val);
                       const labels: Record<string, string> = {
                         creditorName: "Acreedor",
@@ -388,9 +394,7 @@ export function VoiceAssistant() {
                             {labels[key] ?? key}
                           </span>
                           <span className="ledger-dots" />
-                          <span className="voice-data-value">
-                            {displayVal}
-                          </span>
+                          <span className="voice-data-value">{displayVal}</span>
                         </div>
                       );
                     })}
@@ -400,16 +404,14 @@ export function VoiceAssistant() {
                 {result.action === "query" && (
                   <div className="voice-data-card">
                     <p className="text-sm text-ink-soft">
-                      {String(result.data.question ?? result.summary)}
+                      {String(result.data.answer ?? result.summary)}
                     </p>
                   </div>
                 )}
 
                 {/* Confidence */}
                 <div className="voice-confidence">
-                  <span className="voice-confidence-label">
-                    Confianza
-                  </span>
+                  <span className="voice-confidence-label">Confianza</span>
                   <div className="voice-confidence-bar">
                     <div
                       className="voice-confidence-fill"
