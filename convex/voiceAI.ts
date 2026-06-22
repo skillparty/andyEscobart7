@@ -10,9 +10,11 @@
  *     la confianza es ≥ 0.7.
  */
 
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { action } from "./_generated/server";
 import { api } from "./_generated/api";
+import type { ActionCtx } from "./_generated/server";
+import { action } from "./_generated/server";
 
 // ---------------------------------------------------------------------------
 // Tipos del resultado estructurado que devuelve Gemini
@@ -90,7 +92,8 @@ async function callGeminiRest(
     throw new Error("Falta la variable de entorno GEMINI_API_KEY");
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const url =
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
   const body = {
     contents: [
@@ -114,7 +117,10 @@ async function callGeminiRest(
 
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey,
+    },
     body: JSON.stringify(body),
   });
 
@@ -130,8 +136,7 @@ async function callGeminiRest(
     }>;
   };
 
-  const rawText =
-    json.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
+  const rawText = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
 
   if (!rawText) {
     return {
@@ -173,6 +178,85 @@ async function callGeminiRest(
 }
 
 // ---------------------------------------------------------------------------
+// Helper: llama a Gemini en modo solo-texto (para responder consultas)
+// ---------------------------------------------------------------------------
+
+async function callGeminiText(prompt: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("Falta la variable de entorno GEMINI_API_KEY");
+  }
+
+  const url =
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey,
+    },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Error de Gemini API (texto):", response.status, errorText);
+    throw new Error(`Error de la API de Gemini (${response.status})`);
+  }
+
+  const json = (await response.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+
+  return json.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
+}
+
+// ---------------------------------------------------------------------------
+// Helper: responde una consulta financiera con los datos del usuario
+// ---------------------------------------------------------------------------
+
+async function answerFinancialQuery(
+  ctx: ActionCtx,
+  question: string,
+): Promise<string> {
+  const [accounts, payables, receivables] = await Promise.all([
+    ctx.runQuery(api.accounts.list, {}),
+    ctx.runQuery(api.payables.list, {}),
+    ctx.runQuery(api.receivables.list, {}),
+  ]);
+
+  const toBob = (cents: number) => (cents / 100).toFixed(2);
+
+  const context = {
+    cuentas: accounts.map((a) => ({ nombre: a.name, saldo: toBob(a.balance) })),
+    porPagar: payables.map((p) => ({
+      acreedor: p.creditorName,
+      razon: p.reason,
+      monto: toBob(p.amount),
+    })),
+    porCobrar: receivables.map((r) => ({
+      deudor: r.debtorName,
+      monto: toBob(r.amount),
+    })),
+  };
+
+  const prompt = `Eres un asistente financiero de la app "Cuentas Claras". Responde en español, breve y claro (máximo 2 frases). Todos los montos están en bolivianos (BOB).
+
+Datos del usuario (JSON):
+${JSON.stringify(context)}
+
+Pregunta del usuario: "${question}"
+
+Responde únicamente con la respuesta, sin JSON ni markdown.`;
+
+  const answer = await callGeminiText(prompt);
+  return answer || "No pude calcular una respuesta con tus datos actuales.";
+}
+
+// ---------------------------------------------------------------------------
 // Helper: convierte un Blob a base64
 // ---------------------------------------------------------------------------
 
@@ -195,6 +279,11 @@ export const processVoice = action({
     storageId: v.id("_storage"),
   },
   handler: async (ctx, args): Promise<VoiceResult> => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) {
+      throw new Error("No autenticado");
+    }
+
     const blob = await ctx.storage.get(args.storageId);
     if (!blob) {
       throw new Error("No se encontró el archivo de audio en storage");
@@ -203,7 +292,12 @@ export const processVoice = action({
     const base64 = await blobToBase64(blob);
     const mimeType = blob.type || "audio/webm";
 
-    return await callGeminiRest(base64, mimeType);
+    try {
+      return await callGeminiRest(base64, mimeType);
+    } finally {
+      // El audio es efímero: se elimina tras procesarlo (privacidad + storage).
+      await ctx.storage.delete(args.storageId);
+    }
   },
 });
 
@@ -216,7 +310,12 @@ export const processVoiceAndExecute = action({
     storageId: v.id("_storage"),
   },
   handler: async (ctx, args): Promise<VoiceExecuteResult> => {
-    // 1. Procesar el audio
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) {
+      throw new Error("No autenticado");
+    }
+
+    // 1. Procesar el audio (efímero: se elimina tras leerlo)
     const blob = await ctx.storage.get(args.storageId);
     if (!blob) {
       throw new Error("No se encontró el archivo de audio en storage");
@@ -224,15 +323,42 @@ export const processVoiceAndExecute = action({
 
     const base64 = await blobToBase64(blob);
     const mimeType = blob.type || "audio/webm";
-    const result = await callGeminiRest(base64, mimeType);
+    let result: VoiceResult;
+    try {
+      result = await callGeminiRest(base64, mimeType);
+    } finally {
+      await ctx.storage.delete(args.storageId);
+    }
 
     const response: VoiceExecuteResult = {
       ...result,
       executed: false,
     };
 
-    // 2. Solo ejecutar si la confianza es suficiente
+    // 2. Las consultas se responden siempre (no escriben datos, no requieren
+    //    umbral de confianza).
+    if (result.action === "query") {
+      try {
+        const question =
+          typeof result.data.question === "string"
+            ? result.data.question
+            : result.summary;
+        const answer = await answerFinancialQuery(ctx, question);
+        response.summary = answer;
+        response.data = { ...result.data, answer };
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Error desconocido";
+        console.error("Error al responder la consulta:", message);
+        response.error = message;
+      }
+      return response;
+    }
+
+    // 3. Las acciones de escritura solo se ejecutan con confianza suficiente.
     if (result.confidence < 0.7) {
+      response.error =
+        "No registrado: baja confianza. Confirma e ingresa el dato manualmente.";
       return response;
     }
 
@@ -243,9 +369,14 @@ export const processVoiceAndExecute = action({
         case "create_payable": {
           const creditorName = data.creditorName as string;
           const reason = data.reason as string;
-          const amount = data.amount as number;
+          const amount = Number(data.amount);
 
-          if (!creditorName || !reason || !amount) {
+          if (
+            !creditorName ||
+            !reason ||
+            !Number.isFinite(amount) ||
+            amount <= 0
+          ) {
             response.error = "Faltan datos para crear la cuenta por pagar.";
             return response;
           }
@@ -261,10 +392,10 @@ export const processVoiceAndExecute = action({
 
         case "create_receivable": {
           const debtorName = data.debtorName as string;
-          const amount = data.amount as number;
+          const amount = Number(data.amount);
           const note = data.note as string | undefined;
 
-          if (!debtorName || !amount) {
+          if (!debtorName || !Number.isFinite(amount) || amount <= 0) {
             response.error = "Faltan datos para crear la cuenta por cobrar.";
             return response;
           }
@@ -280,9 +411,9 @@ export const processVoiceAndExecute = action({
 
         case "create_account": {
           const name = data.name as string;
-          const balance = data.balance as number;
+          const balance = Number(data.balance);
 
-          if (!name || balance === undefined || balance === null) {
+          if (!name || !Number.isFinite(balance)) {
             response.error = "Faltan datos para crear la cuenta.";
             return response;
           }
