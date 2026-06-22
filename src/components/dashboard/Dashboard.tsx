@@ -9,6 +9,7 @@ import { HeroPanel } from "./HeroPanel";
 import { HistorySection } from "./HistorySection";
 import { PayablesSection } from "./PayablesSection";
 import { ReceivablesSection } from "./ReceivablesSection";
+import { VoiceAssistant } from "./VoiceAssistant";
 
 // Recharts es pesado (~100kb gz). Se carga aparte del bundle inicial.
 const ChartsSection = lazy(() =>
@@ -100,6 +101,8 @@ export function Dashboard() {
           </div>
         </div>
       </main>
+
+      <VoiceAssistant />
     </div>
   );
 }

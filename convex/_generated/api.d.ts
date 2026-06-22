@@ -15,8 +15,10 @@ import type * as migrations from "../migrations.js";
 import type * as money from "../money.js";
 import type * as payables from "../payables.js";
 import type * as receivables from "../receivables.js";
+import type * as storage from "../storage.js";
 import type * as transactions from "../transactions.js";
 import type * as users from "../users.js";
+import type * as voiceAI from "../voiceAI.js";
 
 import type {
   ApiFromModules,
@@ -32,8 +34,10 @@ declare const fullApi: ApiFromModules<{
   money: typeof money;
   payables: typeof payables;
   receivables: typeof receivables;
+  storage: typeof storage;
   transactions: typeof transactions;
   users: typeof users;
+  voiceAI: typeof voiceAI;
 }>;
 
 /**
