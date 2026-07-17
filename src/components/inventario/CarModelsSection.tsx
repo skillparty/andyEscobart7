@@ -6,6 +6,7 @@ import { EmptyState } from "~/components/ui/LedgerCard";
 import { INPUT_CLASS, LABEL_CLASS } from "~/components/ui/tones";
 import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
+import { ModelCompatibilityEditor } from "./ModelCompatibilityEditor";
 
 export function CarModelsSection() {
   const models = useQuery(api.inventario.carModels.list);
@@ -72,6 +73,7 @@ function CarModelRow({ model }: { model: Doc<"carModels"> }) {
   const [name, setName] = useState(model.name);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showCompat, setShowCompat] = useState(false);
 
   const startEditing = () => {
     setName(model.name);
@@ -139,26 +141,42 @@ function CarModelRow({ model }: { model: Doc<"carModels"> }) {
   }
 
   return (
-    <li className="group flex items-center gap-3 py-3">
-      <span className="min-w-0 flex-1 truncate text-sm font-medium">
-        {model.name}
-      </span>
-      <span className="flex shrink-0 gap-1 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
-        <RowButton
-          type="button"
-          label={`Editar: ${model.name}`}
-          onClick={startEditing}
-        >
-          ✎
-        </RowButton>
-        <RowButton
-          type="button"
-          label={`Eliminar: ${model.name}`}
-          onClick={() => void removeModel({ id: model._id })}
-        >
-          ✕
-        </RowButton>
-      </span>
+    <li className="py-3">
+      <div className="group flex items-center gap-3">
+        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+          {model.name}
+        </span>
+        <span className="flex shrink-0 gap-1">
+          <RowButton
+            type="button"
+            label={
+              showCompat
+                ? `Ocultar repuestos compatibles: ${model.name}`
+                : `Ver repuestos compatibles: ${model.name}`
+            }
+            onClick={() => setShowCompat((open) => !open)}
+          >
+            🔗
+          </RowButton>
+          <span className="flex gap-1 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+            <RowButton
+              type="button"
+              label={`Editar: ${model.name}`}
+              onClick={startEditing}
+            >
+              ✎
+            </RowButton>
+            <RowButton
+              type="button"
+              label={`Eliminar: ${model.name}`}
+              onClick={() => void removeModel({ id: model._id })}
+            >
+              ✕
+            </RowButton>
+          </span>
+        </span>
+      </div>
+      {showCompat ? <ModelCompatibilityEditor carModelId={model._id} /> : null}
     </li>
   );
 }

@@ -7,6 +7,7 @@ import { INPUT_CLASS, LABEL_CLASS } from "~/components/ui/tones";
 import { centsToInput, formatMoney, parseAmount } from "~/lib/money";
 import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
+import { CompatibilityEditor } from "./CompatibilityEditor";
 
 export function ItemsSection() {
   const items = useQuery(api.inventario.items.list);
@@ -77,6 +78,7 @@ function ItemRow({ item }: { item: Doc<"items"> }) {
   );
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showCompat, setShowCompat] = useState(false);
 
   const startEditing = () => {
     setName(item.name);
@@ -196,34 +198,52 @@ function ItemRow({ item }: { item: Doc<"items"> }) {
   }
 
   return (
-    <li className="group flex items-center gap-3 py-3">
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium">{item.name}</span>
-        <span className="block truncate text-xs text-ink-soft">
-          {item.sku} · stock {item.stock}
+    <li className="py-3">
+      <div className="group flex items-center gap-3">
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium">
+            {item.name}
+          </span>
+          <span className="block truncate text-xs text-ink-soft">
+            {item.sku} · stock {item.stock}
+          </span>
         </span>
-      </span>
-      {item.priceCents !== undefined ? (
-        <span className="shrink-0 font-medium tabular-nums text-ink-soft">
-          {formatMoney(item.priceCents)}
+        {item.priceCents !== undefined ? (
+          <span className="shrink-0 font-medium tabular-nums text-ink-soft">
+            {formatMoney(item.priceCents)}
+          </span>
+        ) : null}
+        <span className="flex shrink-0 gap-1">
+          <RowButton
+            type="button"
+            label={
+              showCompat
+                ? `Ocultar modelos compatibles: ${item.name}`
+                : `Ver modelos compatibles: ${item.name}`
+            }
+            onClick={() => setShowCompat((open) => !open)}
+          >
+            🔗
+          </RowButton>
+          <span className="flex gap-1 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+            <RowButton
+              type="button"
+              label={`Editar: ${item.name}`}
+              onClick={startEditing}
+            >
+              ✎
+            </RowButton>
+            <RowButton
+              type="button"
+              label={`Eliminar: ${item.name}`}
+              onClick={() => void removeItem({ id: item._id })}
+            >
+              ✕
+            </RowButton>
+          </span>
         </span>
-      ) : null}
-      <span className="flex shrink-0 gap-1 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
-        <RowButton
-          type="button"
-          label={`Editar: ${item.name}`}
-          onClick={startEditing}
-        >
-          ✎
-        </RowButton>
-        <RowButton
-          type="button"
-          label={`Eliminar: ${item.name}`}
-          onClick={() => void removeItem({ id: item._id })}
-        >
-          ✕
-        </RowButton>
-      </span>
+      </div>
+      {showCompat ? <CompatibilityEditor itemId={item._id} /> : null}
     </li>
   );
 }
