@@ -1,4 +1,5 @@
 import { useAuthActions } from "@convex-dev/auth/react";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { lazy, Suspense, useState } from "react";
 import { BrandMark } from "~/components/ui/BrandMark";
@@ -63,6 +64,12 @@ export function Dashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              to="/inventario"
+              className="rounded-lg border border-line px-3 py-1.5 text-sm font-semibold transition-colors duration-150 hover:border-ink/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              Inventario
+            </Link>
             <ExportMenu onExport={handleExport} isExporting={isExporting} />
             <UserMenu viewer={viewer} onSignOut={() => void signOut()} />
           </div>

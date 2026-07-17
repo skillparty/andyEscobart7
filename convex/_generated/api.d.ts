@@ -11,6 +11,12 @@
 import type * as accounts from "../accounts.js";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
+import type * as inventario_carModels from "../inventario/carModels.js";
+import type * as inventario_compatibility from "../inventario/compatibility.js";
+import type * as inventario_importRows from "../inventario/importRows.js";
+import type * as inventario_items from "../inventario/items.js";
+import type * as inventario_lib from "../inventario/lib.js";
+import type * as inventario_search from "../inventario/search.js";
 import type * as migrations from "../migrations.js";
 import type * as money from "../money.js";
 import type * as payables from "../payables.js";
@@ -30,6 +36,12 @@ declare const fullApi: ApiFromModules<{
   accounts: typeof accounts;
   auth: typeof auth;
   http: typeof http;
+  "inventario/carModels": typeof inventario_carModels;
+  "inventario/compatibility": typeof inventario_compatibility;
+  "inventario/importRows": typeof inventario_importRows;
+  "inventario/items": typeof inventario_items;
+  "inventario/lib": typeof inventario_lib;
+  "inventario/search": typeof inventario_search;
   migrations: typeof migrations;
   money: typeof money;
   payables: typeof payables;
