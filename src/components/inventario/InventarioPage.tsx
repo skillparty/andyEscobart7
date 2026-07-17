@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { BrandMark } from "~/components/ui/BrandMark";
+import { CarModelsSection } from "./CarModelsSection";
 import { ExcelImportPanel } from "./ExcelImportPanel";
 import { InventarioSearch } from "./InventarioSearch";
+import { ItemsSection } from "./ItemsSection";
 
 export function InventarioPage() {
   return (
@@ -27,6 +29,10 @@ export function InventarioPage() {
         <div className="grid gap-5">
           <ExcelImportPanel />
           <InventarioSearch />
+          <div className="grid items-start gap-5 lg:grid-cols-2">
+            <ItemsSection />
+            <CarModelsSection />
+          </div>
         </div>
       </main>
     </div>
