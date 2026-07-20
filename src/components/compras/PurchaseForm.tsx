@@ -189,58 +189,64 @@ export function PurchaseForm() {
 
           <fieldset>
             <legend className={LABEL_CLASS}>Productos</legend>
-            <div className="grid gap-2">
+            <div className="grid gap-3">
               {lines.map((line) => (
                 <div
                   key={line.key}
-                  className="grid grid-cols-[1fr_4.5rem_6.5rem_auto] items-center gap-2"
+                  className="flex flex-col gap-2 rounded-xl border border-line bg-paper/50 p-3 sm:flex-row sm:items-center sm:border-0 sm:bg-transparent sm:p-0 sm:gap-2"
                 >
-                  <select
-                    aria-label="Repuesto"
-                    value={line.itemId}
-                    onChange={(e) =>
-                      updateLine(line.key, {
-                        itemId: e.target.value as Id<"items"> | "",
-                      })
-                    }
-                    className={INPUT_CLASS}
-                  >
-                    <option value="">— Repuesto —</option>
-                    {items.map((item) => (
-                      <option key={item._id} value={item._id}>
-                        {item.sku} · {item.name}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    aria-label="Cantidad"
-                    inputMode="numeric"
-                    value={line.quantity}
-                    onChange={(e) =>
-                      updateLine(line.key, { quantity: e.target.value })
-                    }
-                    placeholder="Cant."
-                    className={INPUT_CLASS}
-                  />
-                  <input
-                    aria-label="Precio unitario en bolivianos"
-                    inputMode="decimal"
-                    value={line.price}
-                    onChange={(e) =>
-                      updateLine(line.key, { price: e.target.value })
-                    }
-                    placeholder="Bs c/u"
-                    className={INPUT_CLASS}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeLine(line.key)}
-                    disabled={lines.length === 1}
-                    aria-label="Quitar línea"
-                    className="grid size-8 place-items-center rounded-md border border-line text-xs text-ink-soft transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-40"
-                  >
-                    ✕
-                  </button>
+                  <div className="flex-1 min-w-0">
+                    <select
+                      aria-label="Repuesto"
+                      value={line.itemId}
+                      onChange={(e) =>
+                        updateLine(line.key, {
+                          itemId: e.target.value as Id<"items"> | "",
+                        })
+                      }
+                      className={INPUT_CLASS}
+                    >
+                      <option value="">— Repuesto —</option>
+                      {items.map((item) => (
+                        <option key={item._id} value={item._id}>
+                          {item.sku} · {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2">
+                    <input
+                      aria-label="Cantidad"
+                      inputMode="numeric"
+                      value={line.quantity}
+                      onChange={(e) =>
+                        updateLine(line.key, { quantity: e.target.value })
+                      }
+                      placeholder="Cant."
+                      className={`${INPUT_CLASS} sm:w-20`}
+                    />
+                    <input
+                      aria-label="Precio unitario en bolivianos"
+                      inputMode="decimal"
+                      value={line.price}
+                      onChange={(e) =>
+                        updateLine(line.key, { price: e.target.value })
+                      }
+                      placeholder="Bs c/u"
+                      className={`${INPUT_CLASS} sm:w-28`}
+                    />
+                  </div>
+                  <div className="flex justify-end border-t border-line/30 pt-2 sm:border-0 sm:pt-0">
+                    <button
+                      type="button"
+                      onClick={() => removeLine(line.key)}
+                      disabled={lines.length === 1}
+                      aria-label="Quitar línea"
+                      className="grid size-9 place-items-center rounded-md border border-line text-xs text-ink-soft transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-40 sm:size-8"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

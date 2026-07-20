@@ -138,7 +138,7 @@ function HistoryRow({
           })}
         </time>
       </span>
-      <span className="shrink-0 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+      <span className="shrink-0 opacity-100 transition-opacity duration-150 sm:opacity-0 sm:focus-within:opacity-100 sm:group-hover:opacity-100">
         {tx.type === "adjustment" ? null : (
           <RowButton
             type="button"

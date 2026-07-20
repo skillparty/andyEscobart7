@@ -120,7 +120,7 @@ function AccountRow({ account }: { account: Doc<"accounts"> }) {
             </span>
           )}
         </span>
-        <span className="flex shrink-0 gap-1 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+        <span className="flex shrink-0 gap-1 opacity-100 transition-opacity duration-150 sm:opacity-0 sm:focus-within:opacity-100 sm:group-hover:opacity-100">
           <RowButton
             type="button"
             label={`Editar saldo de ${account.name}`}
