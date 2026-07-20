@@ -70,6 +70,12 @@ export function Dashboard() {
             >
               Inventario
             </Link>
+            <Link
+              to="/compras"
+              className="rounded-lg border border-line px-3 py-1.5 text-sm font-semibold transition-colors duration-150 hover:border-ink/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              Compras
+            </Link>
             <ExportMenu onExport={handleExport} isExporting={isExporting} />
             <UserMenu viewer={viewer} onSignOut={() => void signOut()} />
           </div>

@@ -58,7 +58,11 @@ export default defineSchema({
     sku: v.string(),
     name: v.string(),
     stock: v.number(),
+    // Precio de venta al cliente.
     priceCents: v.optional(v.number()),
+    // Último costo de compra (se actualiza al registrar compras). Separado
+    // del precio de venta para poder calcular margen.
+    lastCostCents: v.optional(v.number()),
     archivedAt: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
@@ -93,4 +97,52 @@ export default defineSchema({
     .index("by_item", ["itemId"])
     .index("by_car_model", ["carModelId"])
     .index("by_item_and_car_model", ["itemId", "carModelId"]),
+
+  // Módulo compras: registro documental de a quién se compró, qué y a cuánto.
+  // Las líneas de compra son la fuente de verdad del historial de precios.
+  suppliers: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    phone: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    archivedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_name", ["userId", "name"]),
+
+  purchases: defineTable({
+    userId: v.id("users"),
+    supplierId: v.id("suppliers"),
+    // Snapshot del nombre: el historial no cambia si se renombra el proveedor.
+    supplierName: v.string(),
+    invoiceNumber: v.optional(v.string()),
+    purchasedAt: v.number(),
+    // Suma de las líneas, denormalizada para listar sin leerlas.
+    totalCents: v.number(),
+    paymentType: v.union(v.literal("cash"), v.literal("credit")),
+    // Contado: cuenta desde la que se pagó (opcional, puede ser efectivo).
+    accountId: v.optional(v.id("accounts")),
+    // Crédito: cuenta por pagar generada por esta compra.
+    payableId: v.optional(v.id("payables")),
+    // Anulación: revierte stock y pago; la fila se conserva para auditoría.
+    canceledAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_purchasedAt", ["userId", "purchasedAt"])
+    .index("by_supplier", ["supplierId"]),
+
+  purchaseLines: defineTable({
+    userId: v.id("users"),
+    purchaseId: v.id("purchases"),
+    itemId: v.id("items"),
+    // Snapshots: la línea describe lo comprado aunque el item cambie después.
+    itemSku: v.string(),
+    itemName: v.string(),
+    quantity: v.number(),
+    unitPriceCents: v.number(),
+    // Denormalizado de purchases.purchasedAt para el historial de precios.
+    purchasedAt: v.number(),
+  })
+    .index("by_purchase", ["purchaseId"])
+    .index("by_item_and_purchasedAt", ["itemId", "purchasedAt"]),
 });

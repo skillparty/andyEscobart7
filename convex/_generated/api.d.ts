@@ -10,6 +10,8 @@
 
 import type * as accounts from "../accounts.js";
 import type * as auth from "../auth.js";
+import type * as compras_purchases from "../compras/purchases.js";
+import type * as compras_suppliers from "../compras/suppliers.js";
 import type * as http from "../http.js";
 import type * as inventario_carModels from "../inventario/carModels.js";
 import type * as inventario_compatibility from "../inventario/compatibility.js";
@@ -35,6 +37,8 @@ import type {
 declare const fullApi: ApiFromModules<{
   accounts: typeof accounts;
   auth: typeof auth;
+  "compras/purchases": typeof compras_purchases;
+  "compras/suppliers": typeof compras_suppliers;
   http: typeof http;
   "inventario/carModels": typeof inventario_carModels;
   "inventario/compatibility": typeof inventario_compatibility;
