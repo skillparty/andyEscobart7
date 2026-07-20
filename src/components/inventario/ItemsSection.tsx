@@ -8,6 +8,7 @@ import { centsToInput, formatMoney, parseAmount } from "~/lib/money";
 import { api } from "../../../convex/_generated/api";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { CompatibilityEditor } from "./CompatibilityEditor";
+import { PriceHistoryChart } from "./PriceHistoryChart";
 
 export function ItemsSection() {
   const items = useQuery(api.inventario.items.list);
@@ -79,6 +80,7 @@ function ItemRow({ item }: { item: Doc<"items"> }) {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showCompat, setShowCompat] = useState(false);
+  const [showPriceHistory, setShowPriceHistory] = useState(false);
 
   const startEditing = () => {
     setName(item.name);
@@ -217,6 +219,17 @@ function ItemRow({ item }: { item: Doc<"items"> }) {
           <RowButton
             type="button"
             label={
+              showPriceHistory
+                ? `Ocultar historial de precio: ${item.name}`
+                : `Ver historial de precio: ${item.name}`
+            }
+            onClick={() => setShowPriceHistory((open) => !open)}
+          >
+            📈
+          </RowButton>
+          <RowButton
+            type="button"
+            label={
               showCompat
                 ? `Ocultar modelos compatibles: ${item.name}`
                 : `Ver modelos compatibles: ${item.name}`
@@ -243,6 +256,7 @@ function ItemRow({ item }: { item: Doc<"items"> }) {
           </span>
         </span>
       </div>
+      {showPriceHistory ? <PriceHistoryChart itemId={item._id} /> : null}
       {showCompat ? <CompatibilityEditor itemId={item._id} /> : null}
     </li>
   );
