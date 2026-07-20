@@ -1,7 +1,8 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import type * as React from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { BrandMark } from "~/components/ui/BrandMark";
+import { usePointerGlow } from "~/hooks/usePointerGlow";
 import { formatMoney } from "~/lib/money";
 import { IguanaAccountant } from "./IguanaAccountant";
 
@@ -16,6 +17,9 @@ const SAMPLE_ROWS = [
 export function LoginScreen() {
   const { signIn } = useAuthActions();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const containerRef = useRef<HTMLElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
+  usePointerGlow(containerRef, glowRef);
 
   const handleGoogleSignIn = () => {
     setIsSigningIn(true);
@@ -23,17 +27,22 @@ export function LoginScreen() {
   };
 
   return (
-    <main className="grid min-h-dvh bg-paper lg:grid-cols-[1.1fr_1fr]">
+    <main
+      ref={containerRef}
+      className="relative grid min-h-dvh overflow-hidden bg-paper lg:grid-cols-[1.1fr_1fr]"
+    >
+      {/* Luz cálida que persigue al puntero por toda la pantalla (en táctil
+          o con reduced-motion queda fija en la esquina superior izquierda) */}
+      <div
+        ref={glowRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute left-0 top-0 size-80 rounded-full bg-positive-soft opacity-60 blur-3xl"
+        style={{ transform: "translate3d(-96px, -96px, 0)" }}
+      />
       <section
         aria-labelledby="login-heading"
-        className="relative flex flex-col justify-center overflow-hidden px-6 py-16 sm:px-12 lg:px-20"
+        className="relative flex flex-col justify-center px-6 py-16 sm:px-12 lg:px-20"
       >
-        {/* Atmósfera cálida detrás del titular */}
-        <div
-          aria-hidden="true"
-          className="halo-drift pointer-events-none absolute -left-24 -top-24 size-80 rounded-full bg-positive-soft opacity-50 blur-3xl"
-        />
-
         <div className="relative">
           <div
             className="rise-in mb-8 flex items-center gap-2.5"
