@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as KardexRouteImport } from './routes/kardex'
 import { Route as InventarioRouteImport } from './routes/inventario'
 import { Route as ComprasRouteImport } from './routes/compras'
 import { Route as IndexRouteImport } from './routes/index'
 
+const KardexRoute = KardexRouteImport.update({
+  id: '/kardex',
+  path: '/kardex',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InventarioRoute = InventarioRouteImport.update({
   id: '/inventario',
   path: '/inventario',
@@ -33,34 +39,45 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/compras': typeof ComprasRoute
   '/inventario': typeof InventarioRoute
+  '/kardex': typeof KardexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/compras': typeof ComprasRoute
   '/inventario': typeof InventarioRoute
+  '/kardex': typeof KardexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/compras': typeof ComprasRoute
   '/inventario': typeof InventarioRoute
+  '/kardex': typeof KardexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/compras' | '/inventario'
+  fullPaths: '/' | '/compras' | '/inventario' | '/kardex'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/compras' | '/inventario'
-  id: '__root__' | '/' | '/compras' | '/inventario'
+  to: '/' | '/compras' | '/inventario' | '/kardex'
+  id: '__root__' | '/' | '/compras' | '/inventario' | '/kardex'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ComprasRoute: typeof ComprasRoute
   InventarioRoute: typeof InventarioRoute
+  KardexRoute: typeof KardexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/kardex': {
+      id: '/kardex'
+      path: '/kardex'
+      fullPath: '/kardex'
+      preLoaderRoute: typeof KardexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/inventario': {
       id: '/inventario'
       path: '/inventario'
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ComprasRoute: ComprasRoute,
   InventarioRoute: InventarioRoute,
+  KardexRoute: KardexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

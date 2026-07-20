@@ -63,6 +63,11 @@ export default defineSchema({
     // Último costo de compra (se actualiza al registrar compras). Separado
     // del precio de venta para poder calcular margen.
     lastCostCents: v.optional(v.number()),
+    // Valor total del stock actual, en centavos (pool de valor). Fuente de
+    // verdad del kardex: el costo promedio ponderado se deriva como
+    // valueCents / stock en vez de almacenarse, para no acumular error de
+    // redondeo al recalcular un promedio sobre otro promedio.
+    valueCents: v.optional(v.number()),
     archivedAt: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
@@ -145,4 +150,31 @@ export default defineSchema({
   })
     .index("by_purchase", ["purchaseId"])
     .index("by_item_and_purchasedAt", ["itemId", "purchasedAt"]),
+
+  // Kardex: ledger inmutable de cada movimiento de stock valorado. Nunca se
+  // edita ni se borra una fila — una corrección se registra como un nuevo
+  // movimiento de tipo "adjustment", igual que un asiento contable.
+  stockMovements: defineTable({
+    userId: v.id("users"),
+    itemId: v.id("items"),
+    type: v.union(
+      v.literal("opening"), // stock inicial declarado al crear el repuesto
+      v.literal("purchase"), // entrada por compra
+      v.literal("purchase_reversal"), // anulación de una compra
+      v.literal("adjustment"), // corrección manual de stock
+    ),
+    // Positivo = entrada, negativo = salida.
+    quantityDelta: v.number(),
+    // Cambio en el valor total del stock (centavos), coherente con quantityDelta.
+    valueDeltaCents: v.number(),
+    // Saldos después de aplicar este movimiento (lectura directa, sin sumar
+    // el historial completo cada vez).
+    balanceQuantity: v.number(),
+    balanceValueCents: v.number(),
+    reference: v.optional(v.string()),
+    purchaseId: v.optional(v.id("purchases")),
+    occurredAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_item_and_occurredAt", ["itemId", "occurredAt"]),
 });

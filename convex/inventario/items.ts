@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
+import { applyStockMovement, averageCostCents } from "../kardex/lib";
 import { assertBalanceCents } from "../money";
 import { requireUserId } from "../users";
 import { normalizeText } from "./lib";
@@ -51,13 +52,29 @@ export const create = mutation({
       throw new Error("Ya existe un repuesto con ese código o número de serie");
     }
 
-    return await ctx.db.insert("items", {
+    const itemId = await ctx.db.insert("items", {
       userId,
       sku,
       name,
-      stock: args.stock,
+      stock: 0,
       priceCents: args.priceCents,
     });
+
+    if (args.stock > 0) {
+      await applyStockMovement(ctx, {
+        userId,
+        itemId,
+        type: "opening",
+        quantityDelta: args.stock,
+        // Costo desconocido al crear el repuesto: la valoración se vuelve
+        // confiable recién con la primera compra registrada.
+        valueDeltaCents: 0,
+        reference: "Stock inicial",
+        occurredAt: Date.now(),
+      });
+    }
+
+    return itemId;
   },
 });
 
@@ -75,8 +92,7 @@ export const update = mutation({
       throw new Error("Repuesto no encontrado");
     }
 
-    const patch: Partial<{ name: string; stock: number; priceCents: number }> =
-      {};
+    const patch: Partial<{ name: string; priceCents: number }> = {};
     if (args.name !== undefined) {
       const name = normalizeText(args.name);
       if (name.length === 0) {
@@ -88,14 +104,38 @@ export const update = mutation({
       if (!Number.isInteger(args.stock) || args.stock < 0) {
         throw new Error("El stock debe ser un entero mayor o igual a cero");
       }
-      patch.stock = args.stock;
     }
     if (args.priceCents !== undefined) {
       assertBalanceCents(args.priceCents, "El precio");
       patch.priceCents = args.priceCents;
     }
 
-    await ctx.db.patch(args.id, patch);
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(args.id, patch);
+    }
+
+    // Cambio de stock manual: se registra como movimiento de kardex (tipo
+    // "adjustment"), no como un patch directo, para que el ledger sea la
+    // fuente de verdad de todo cambio de cantidad.
+    if (args.stock !== undefined && args.stock !== item.stock) {
+      const delta = args.stock - item.stock;
+      const isEmptying = args.stock === 0;
+      const unitCostCents =
+        averageCostCents(item.stock, item.valueCents) ||
+        (item.lastCostCents ?? 0);
+      const valueDeltaCents = isEmptying
+        ? -(item.valueCents ?? 0)
+        : delta * unitCostCents;
+      await applyStockMovement(ctx, {
+        userId,
+        itemId: args.id,
+        type: "adjustment",
+        quantityDelta: delta,
+        valueDeltaCents,
+        reference: "Ajuste manual de stock",
+        occurredAt: Date.now(),
+      });
+    }
   },
 });
 

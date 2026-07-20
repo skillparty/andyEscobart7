@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
 import { normalizeText } from "../inventario/lib";
+import { applyStockMovement } from "../kardex/lib";
 import { assertPositiveCents } from "../money";
 import { requireUserId } from "../users";
 
@@ -196,7 +197,8 @@ export const create = mutation({
       payableId,
     });
 
-    // Líneas + efectos en inventario: entra stock y se actualiza último costo.
+    // Líneas + kardex: entra stock valorado al precio de la línea y se
+    // actualiza el último costo de compra.
     for (const line of resolvedLines) {
       await ctx.db.insert("purchaseLines", {
         userId,
@@ -208,13 +210,17 @@ export const create = mutation({
         unitPriceCents: line.unitPriceCents,
         purchasedAt,
       });
-      const item = await ctx.db.get(line.itemId);
-      if (item !== null) {
-        await ctx.db.patch(line.itemId, {
-          stock: item.stock + line.quantity,
-          lastCostCents: line.unitPriceCents,
-        });
-      }
+      await applyStockMovement(ctx, {
+        userId,
+        itemId: line.itemId,
+        type: "purchase",
+        quantityDelta: line.quantity,
+        valueDeltaCents: line.quantity * line.unitPriceCents,
+        reference,
+        purchaseId,
+        occurredAt: purchasedAt,
+      });
+      await ctx.db.patch(line.itemId, { lastCostCents: line.unitPriceCents });
     }
 
     return purchaseId;
@@ -284,13 +290,20 @@ export const cancel = mutation({
       });
     }
 
+    const cancelReference = `Anulación de ${purchase.invoiceNumber ? `compra factura ${purchase.invoiceNumber}` : "compra de mercadería"}`;
     for (const line of lines) {
-      const item = await ctx.db.get(line.itemId);
-      if (item !== null) {
-        await ctx.db.patch(line.itemId, {
-          stock: item.stock - line.quantity,
-        });
-      }
+      await applyStockMovement(ctx, {
+        userId,
+        itemId: line.itemId,
+        type: "purchase_reversal",
+        quantityDelta: -line.quantity,
+        // Revierte exactamente lo que esta compra aportó al pool de valor,
+        // al precio original de la línea (no al costo promedio actual).
+        valueDeltaCents: -(line.quantity * line.unitPriceCents),
+        reference: cancelReference,
+        purchaseId: purchase._id,
+        occurredAt: Date.now(),
+      });
     }
 
     await ctx.db.patch(args.id, { canceledAt: Date.now() });

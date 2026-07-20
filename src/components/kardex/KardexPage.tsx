@@ -1,10 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { BrandMark } from "~/components/ui/BrandMark";
-import { PurchaseForm } from "./PurchaseForm";
-import { PurchasesSection } from "./PurchasesSection";
-import { SuppliersSection } from "./SuppliersSection";
+import { ValuationSection } from "./ValuationSection";
 
-export function ComprasPage() {
+export function KardexPage() {
   return (
     <div className="min-h-dvh">
       <header className="sticky top-0 z-30 border-b border-line bg-card/80 backdrop-blur">
@@ -12,25 +10,19 @@ export function ComprasPage() {
           <div className="flex items-center gap-2.5">
             <BrandMark />
             <p className="font-display text-xl font-semibold tracking-tight">
-              Compras
+              Kardex
             </p>
           </div>
           <nav className="flex items-center gap-2" aria-label="Secciones">
             <HeaderLink to="/" label="← Cuentas" />
             <HeaderLink to="/inventario" label="Inventario" />
-            <HeaderLink to="/kardex" label="Kardex" />
+            <HeaderLink to="/compras" label="Compras" />
           </nav>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 pb-20 pt-8 sm:pt-10">
-        <div className="rise-stagger grid items-start gap-5 lg:grid-cols-[1.5fr_1fr]">
-          <div className="grid gap-5">
-            <PurchaseForm />
-            <PurchasesSection />
-          </div>
-          <SuppliersSection />
-        </div>
+      <main className="mx-auto max-w-3xl px-6 pb-20 pt-8 sm:pt-10">
+        <ValuationSection />
       </main>
     </div>
   );
