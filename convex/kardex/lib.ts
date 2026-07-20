@@ -5,6 +5,8 @@ export type StockMovementType =
   | "opening"
   | "purchase"
   | "purchase_reversal"
+  | "sale"
+  | "sale_reversal"
   | "adjustment";
 
 interface ApplyStockMovementArgs {
@@ -14,12 +16,13 @@ interface ApplyStockMovementArgs {
   // Positivo = entrada, negativo = salida.
   quantityDelta: number;
   // Debe ser exacto para el tipo de movimiento (ver kardex/README en cada
-  // llamador): reversar una compra usa el precio original de la línea, no
-  // el costo promedio actual; vaciar el stock a cero fuerza el valor a
-  // exactamente cero en vez de arrastrar residuos de redondeo.
+  // llamador): reversar una compra o venta usa el precio/costo original de
+  // la línea, no el costo promedio actual; vaciar el stock a cero fuerza el
+  // valor a exactamente cero en vez de arrastrar residuos de redondeo.
   valueDeltaCents: number;
   reference?: string;
   purchaseId?: Id<"purchases">;
+  saleId?: Id<"sales">;
   occurredAt: number;
 }
 
@@ -64,6 +67,7 @@ export async function applyStockMovement(
     balanceValueCents,
     reference: args.reference,
     purchaseId: args.purchaseId,
+    saleId: args.saleId,
     occurredAt: args.occurredAt,
   });
 }

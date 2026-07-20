@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { BrandMark } from "~/components/ui/BrandMark";
-import { PurchaseForm } from "./PurchaseForm";
-import { PurchasesSection } from "./PurchasesSection";
-import { SuppliersSection } from "./SuppliersSection";
+import { MarginSummary } from "./MarginSummary";
+import { SaleForm } from "./SaleForm";
+import { SalesSection } from "./SalesSection";
 
-export function ComprasPage() {
+export function VentasPage() {
   return (
     <div className="min-h-dvh">
       <header className="sticky top-0 z-30 border-b border-line bg-card/80 backdrop-blur">
@@ -12,25 +12,25 @@ export function ComprasPage() {
           <div className="flex items-center gap-2.5">
             <BrandMark />
             <p className="font-display text-xl font-semibold tracking-tight">
-              Compras
+              Ventas
             </p>
           </div>
           <nav className="flex items-center gap-2" aria-label="Secciones">
             <HeaderLink to="/" label="← Cuentas" />
             <HeaderLink to="/inventario" label="Inventario" />
+            <HeaderLink to="/compras" label="Compras" />
             <HeaderLink to="/kardex" label="Kardex" />
-            <HeaderLink to="/ventas" label="Ventas" />
           </nav>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-6 pb-20 pt-8 sm:pt-10">
-        <div className="rise-stagger grid items-start gap-5 lg:grid-cols-[1.5fr_1fr]">
-          <div className="grid gap-5">
-            <PurchaseForm />
-            <PurchasesSection />
-          </div>
-          <SuppliersSection />
+        <div className="pt-0">
+          <MarginSummary />
+        </div>
+        <div className="rise-stagger mt-5 grid items-start gap-5">
+          <SaleForm />
+          <SalesSection />
         </div>
       </main>
     </div>

@@ -14,6 +14,8 @@ const TYPE_LABEL: Record<Doc<"stockMovements">["type"], string> = {
   opening: "Stock inicial",
   purchase: "Compra",
   purchase_reversal: "Anulación de compra",
+  sale: "Venta",
+  sale_reversal: "Anulación de venta",
   adjustment: "Ajuste manual",
 };
 

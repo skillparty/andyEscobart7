@@ -161,6 +161,8 @@ export default defineSchema({
       v.literal("opening"), // stock inicial declarado al crear el repuesto
       v.literal("purchase"), // entrada por compra
       v.literal("purchase_reversal"), // anulación de una compra
+      v.literal("sale"), // salida por venta
+      v.literal("sale_reversal"), // anulación de una venta
       v.literal("adjustment"), // corrección manual de stock
     ),
     // Positivo = entrada, negativo = salida.
@@ -173,8 +175,51 @@ export default defineSchema({
     balanceValueCents: v.number(),
     reference: v.optional(v.string()),
     purchaseId: v.optional(v.id("purchases")),
+    saleId: v.optional(v.id("sales")),
     occurredAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_item_and_occurredAt", ["itemId", "occurredAt"]),
+
+  // Módulo ventas: qué se vendió, a quién, a cuánto, y el margen contra el
+  // costo promedio ponderado del kardex al momento de la venta.
+  sales: defineTable({
+    userId: v.id("users"),
+    // Texto libre: no hay tabla de clientes, igual que un ticket de venta.
+    customerName: v.string(),
+    note: v.optional(v.string()),
+    soldAt: v.number(),
+    // Ingreso total (suma de líneas), denormalizado para listar sin leerlas.
+    totalCents: v.number(),
+    // Costo total (COGS) al costo promedio congelado por línea al vender.
+    totalCostCents: v.number(),
+    // totalCents - totalCostCents; snapshot, no se recalcula después.
+    marginCents: v.number(),
+    paymentType: v.union(v.literal("cash"), v.literal("credit")),
+    // Contado: cuenta donde entró el dinero (opcional = efectivo suelto).
+    accountId: v.optional(v.id("accounts")),
+    // Crédito: cuenta por cobrar generada por esta venta.
+    receivableId: v.optional(v.id("receivables")),
+    // Anulación: revierte stock y cobro; la fila se conserva para auditoría.
+    canceledAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_soldAt", ["userId", "soldAt"]),
+
+  saleLines: defineTable({
+    userId: v.id("users"),
+    saleId: v.id("sales"),
+    itemId: v.id("items"),
+    // Snapshots: la línea describe lo vendido aunque el item cambie después.
+    itemSku: v.string(),
+    itemName: v.string(),
+    quantity: v.number(),
+    unitPriceCents: v.number(),
+    // Costo promedio ponderado congelado en el momento de la venta (COGS
+    // unitario). No cambia si compras posteriores mueven el promedio.
+    unitCostCents: v.number(),
+    soldAt: v.number(),
+  })
+    .index("by_sale", ["saleId"])
+    .index("by_item_and_soldAt", ["itemId", "soldAt"]),
 });

@@ -17,6 +17,7 @@ export function KardexPage() {
             <HeaderLink to="/" label="← Cuentas" />
             <HeaderLink to="/inventario" label="Inventario" />
             <HeaderLink to="/compras" label="Compras" />
+            <HeaderLink to="/ventas" label="Ventas" />
           </nav>
         </div>
       </header>

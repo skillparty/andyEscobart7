@@ -29,6 +29,7 @@ import type * as receivables from "../receivables.js";
 import type * as storage from "../storage.js";
 import type * as transactions from "../transactions.js";
 import type * as users from "../users.js";
+import type * as ventas_sales from "../ventas/sales.js";
 import type * as voiceAI from "../voiceAI.js";
 
 import type {
@@ -59,6 +60,7 @@ declare const fullApi: ApiFromModules<{
   storage: typeof storage;
   transactions: typeof transactions;
   users: typeof users;
+  "ventas/sales": typeof ventas_sales;
   voiceAI: typeof voiceAI;
 }>;
 
