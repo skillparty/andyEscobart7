@@ -90,11 +90,11 @@ export function Dashboard() {
         {/* Bento: columna izquierda (lo que tengo + historial), derecha
             (gráfico + deudas por cobrar/pagar). */}
         <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1.5fr_1fr]">
-          <div className="grid gap-5">
+          <div className="rise-stagger grid gap-5">
             <AccountsSection accounts={accounts} />
             <HistorySection />
           </div>
-          <div className="grid gap-5">
+          <div className="rise-stagger rise-stagger-late grid gap-5">
             <Suspense fallback={<ChartsFallback />}>
               <ChartsSection
                 totalAccounts={totalAccounts}

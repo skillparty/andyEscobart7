@@ -31,7 +31,7 @@ export function LoginScreen() {
         {/* Atmósfera cálida detrás del titular */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -left-24 -top-24 size-80 rounded-full bg-positive-soft opacity-50 blur-3xl"
+          className="halo-drift pointer-events-none absolute -left-24 -top-24 size-80 rounded-full bg-positive-soft opacity-50 blur-3xl"
         />
 
         <div className="relative">
@@ -63,8 +63,8 @@ export function LoginScreen() {
           </p>
 
           <ul
-            className="rise-in mt-7 flex flex-wrap gap-2"
-            style={{ animationDelay: "150ms" }}
+            className="rise-stagger mt-7 flex flex-wrap gap-2"
+            style={{ "--stagger-base": "0.16s" } as React.CSSProperties}
           >
             {TRUST_CHIPS.map((chip) => (
               <li
@@ -77,8 +77,8 @@ export function LoginScreen() {
           </ul>
 
           <ul
-            className="rise-in mt-10 max-w-md space-y-3 border-t border-line pt-6"
-            style={{ animationDelay: "200ms" }}
+            className="rise-stagger mt-10 max-w-md space-y-3 border-t border-line pt-6"
+            style={{ "--stagger-base": "0.28s" } as React.CSSProperties}
             aria-hidden="true"
           >
             {SAMPLE_ROWS.map((row) => (
@@ -102,7 +102,7 @@ export function LoginScreen() {
         aria-label="Iniciar sesión"
         className="flex items-center justify-center px-6 py-16 sm:px-12"
       >
-        <div className="rise-in w-full max-w-sm rounded-3xl border border-line bg-card p-8 shadow-[0_8px_40px_oklch(0%_0_0/0.06)] sm:p-10">
+        <div className="card-enter w-full max-w-sm rounded-3xl border border-line bg-card p-8 shadow-[0_8px_40px_oklch(0%_0_0/0.06)] sm:p-10">
           <div className="mb-8 flex justify-center text-ink-soft">
             <IguanaAccountant />
           </div>

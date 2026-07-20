@@ -1,4 +1,5 @@
 import { TONE_CLASSES, type Tone } from "~/components/ui/tones";
+import { useCountUp } from "~/hooks/useCountUp";
 import { formatMoney } from "~/lib/money";
 
 interface HeroPanelProps {
@@ -30,6 +31,7 @@ export function HeroPanel({
 }: HeroPanelProps) {
   const firstName = name?.trim().split(/\s+/)[0];
   const today = DATE_FMT.format(new Date());
+  const animatedBalance = useCountUp(netBalance);
 
   const segments: Segment[] = [
     { tone: "positive", label: "En cuentas", value: totalAccounts },
@@ -50,7 +52,7 @@ export function HeroPanel({
       {/* Atmósfera: halo cálido detrás del balance */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-20 -top-28 size-72 rounded-full bg-positive-soft opacity-60 blur-3xl"
+        className="halo-drift pointer-events-none absolute -right-20 -top-28 size-72 rounded-full bg-positive-soft opacity-60 blur-3xl"
       />
 
       <div className="relative">
@@ -66,7 +68,7 @@ export function HeroPanel({
               netBalance < 0 ? "text-debt" : "text-ink"
             }`}
           >
-            {formatMoney(netBalance)}
+            {formatMoney(animatedBalance)}
           </p>
           <p className="pb-2 text-sm text-ink-soft">balance neto</p>
         </div>
@@ -77,7 +79,7 @@ export function HeroPanel({
 
         {/* Barra de proporción */}
         <div className="mt-8 max-w-xl">
-          <div className="flex h-3 overflow-hidden rounded-full bg-line/50">
+          <div className="bar-reveal flex h-3 overflow-hidden rounded-full bg-line/50">
             {totalMagnitude > 0 &&
               segments.map((s) => {
                 const pct = (Math.max(s.value, 0) / totalMagnitude) * 100;

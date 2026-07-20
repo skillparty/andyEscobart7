@@ -58,6 +58,70 @@
     }
   }
 
+  /* Cascada de entrada: los hijos directos suben escalonados. La columna
+     derecha del bento arranca un poco después vía --stagger-base. */
+  .rise-stagger > * {
+    animation: rise-in 0.55s var(--ease-out-expo) both;
+    animation-delay: var(--stagger-base, 0.1s);
+  }
+  .rise-stagger > :nth-child(2) {
+    animation-delay: calc(var(--stagger-base, 0.1s) + 0.09s);
+  }
+  .rise-stagger > :nth-child(3) {
+    animation-delay: calc(var(--stagger-base, 0.1s) + 0.18s);
+  }
+  .rise-stagger > :nth-child(4) {
+    animation-delay: calc(var(--stagger-base, 0.1s) + 0.27s);
+  }
+  .rise-stagger-late {
+    --stagger-base: 0.16s;
+  }
+
+  /* Barra de proporción del hero: se revela de izquierda a derecha */
+  .bar-reveal {
+    animation: bar-reveal 0.9s var(--ease-out-expo) 0.35s both;
+  }
+
+  @keyframes bar-reveal {
+    from {
+      clip-path: inset(0 100% 0 0 round 999px);
+    }
+    to {
+      clip-path: inset(0 0 0 0 round 999px);
+    }
+  }
+
+  /* Tarjeta de login: entra con leve escala además de subir */
+  .card-enter {
+    animation: card-enter 0.65s var(--ease-out-expo) 0.15s both;
+  }
+
+  @keyframes card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(24px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Halo del hero: deriva lenta, casi imperceptible */
+  .halo-drift {
+    animation: halo-drift 14s ease-in-out infinite;
+  }
+
+  @keyframes halo-drift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(-16px, 12px, 0) scale(1.08);
+    }
+  }
+
   /* Iguana contable: respiración suave del SVG completo */
   .iguana {
     transform-origin: 60% 80%;
@@ -533,6 +597,10 @@
 
   @media (prefers-reduced-motion: reduce) {
     .rise-in,
+    .rise-stagger > *,
+    .bar-reveal,
+    .card-enter,
+    .halo-drift,
     .iguana,
     .iguana-arm,
     .iguana-sym,
