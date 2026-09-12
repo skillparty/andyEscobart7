@@ -12,6 +12,7 @@ import { PriceHistoryChart } from "./PriceHistoryChart";
 
 export function ItemsSection() {
   const items = useQuery(api.inventario.items.list);
+  const lowStockItems = useQuery(api.inventario.items.listLowStock);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   return (
@@ -45,6 +46,24 @@ export function ItemsSection() {
         </button>
       </header>
 
+      {/* Alerta de Stock Mínimo / Crítico */}
+      {lowStockItems && lowStockItems.length > 0 && (
+        <div className="mt-4 rounded-xl border border-debt/30 bg-debt-soft/50 p-3 text-xs text-debt flex items-center justify-between gap-2 animate-card-enter">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">⚠️</span>
+            <span className="font-semibold">
+              {lowStockItems.length}{" "}
+              {lowStockItems.length === 1
+                ? "repuesto está en stock crítico"
+                : "repuestos están en stock crítico (por debajo del mínimo)"}
+            </span>
+          </div>
+          <span className="text-[11px] font-medium text-debt/80">
+            Requiere reposición
+          </span>
+        </div>
+      )}
+
       {isFormOpen ? (
         <div className="mt-4 border-b border-line pb-4">
           <ItemForm onDone={() => setIsFormOpen(false)} />
@@ -74,6 +93,9 @@ function ItemRow({ item }: { item: Doc<"items"> }) {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(item.name);
   const [stock, setStock] = useState(String(item.stock));
+  const [minStock, setMinStock] = useState(
+    item.minStock !== undefined ? String(item.minStock) : "",
+  );
   const [price, setPrice] = useState(
     item.priceCents !== undefined ? centsToInput(item.priceCents) : "",
   );
@@ -85,6 +107,7 @@ function ItemRow({ item }: { item: Doc<"items"> }) {
   const startEditing = () => {
     setName(item.name);
     setStock(String(item.stock));
+    setMinStock(item.minStock !== undefined ? String(item.minStock) : "");
     setPrice(
       item.priceCents !== undefined ? centsToInput(item.priceCents) : "",
     );
@@ -104,6 +127,16 @@ function ItemRow({ item }: { item: Doc<"items"> }) {
       setError("El stock debe ser un entero mayor o igual a cero");
       return;
     }
+    const parsedMinStock = minStock.trim()
+      ? Number(minStock.trim())
+      : undefined;
+    if (
+      parsedMinStock !== undefined &&
+      (!Number.isInteger(parsedMinStock) || parsedMinStock < 0)
+    ) {
+      setError("El stock mínimo debe ser un entero mayor o igual a cero");
+      return;
+    }
     let priceCents: number | undefined;
     if (price.trim().length > 0) {
       const parsedPrice = parseAmount(price);
@@ -120,6 +153,7 @@ function ItemRow({ item }: { item: Doc<"items"> }) {
         id: item._id,
         name: trimmedName,
         stock: parsedStock,
+        minStock: parsedMinStock,
         priceCents,
       });
       setIsEditing(false);
@@ -134,7 +168,7 @@ function ItemRow({ item }: { item: Doc<"items"> }) {
     return (
       <li className="py-3">
         <form onSubmit={handleSave} className="grid gap-2">
-          <div className="grid gap-2 sm:grid-cols-[1fr_6rem_8rem]">
+          <div className="grid gap-2 sm:grid-cols-[1fr_5rem_5rem_7rem]">
             <div>
               <label htmlFor={`item-name-${item._id}`} className={LABEL_CLASS}>
                 Nombre
@@ -155,6 +189,22 @@ function ItemRow({ item }: { item: Doc<"items"> }) {
                 value={stock}
                 onChange={(e) => setStock(e.target.value)}
                 inputMode="numeric"
+                className={INPUT_CLASS}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor={`item-min-stock-${item._id}`}
+                className={LABEL_CLASS}
+              >
+                Mínimo
+              </label>
+              <input
+                id={`item-min-stock-${item._id}`}
+                value={minStock}
+                onChange={(e) => setMinStock(e.target.value)}
+                inputMode="numeric"
+                placeholder="0"
                 className={INPUT_CLASS}
               />
             </div>
@@ -199,6 +249,11 @@ function ItemRow({ item }: { item: Doc<"items"> }) {
     );
   }
 
+  const isLowStock =
+    item.minStock !== undefined &&
+    item.minStock > 0 &&
+    item.stock <= item.minStock;
+
   return (
     <li className="py-3">
       <div className="group flex items-center gap-3">
@@ -206,8 +261,15 @@ function ItemRow({ item }: { item: Doc<"items"> }) {
           <span className="block truncate text-sm font-medium">
             {item.name}
           </span>
-          <span className="block truncate text-xs text-ink-soft">
-            {item.sku} · stock {item.stock}
+          <span className="flex flex-wrap items-center gap-1.5 text-xs text-ink-soft">
+            <span>{item.sku}</span>
+            <span>·</span>
+            <span>stock {item.stock}</span>
+            {isLowStock && (
+              <span className="inline-flex items-center rounded-md bg-debt-soft border border-debt/30 px-1.5 py-0.2 text-[10px] font-bold text-debt">
+                ⚠️ Stock crítico (mín {item.minStock})
+              </span>
+            )}
           </span>
         </span>
         {item.priceCents !== undefined ? (
@@ -267,6 +329,7 @@ function ItemForm({ onDone }: { onDone: () => void }) {
   const [sku, setSku] = useState("");
   const [name, setName] = useState("");
   const [stock, setStock] = useState("0");
+  const [minStock, setMinStock] = useState("");
   const [price, setPrice] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -286,6 +349,15 @@ function ItemForm({ onDone }: { onDone: () => void }) {
       setError("El stock debe ser un entero mayor o igual a cero");
       return;
     }
+    let parsedMinStock: number | undefined;
+    if (minStock.trim().length > 0) {
+      const parsed = Number(minStock.trim());
+      if (!Number.isInteger(parsed) || parsed < 0) {
+        setError("El stock mínimo debe ser un entero mayor o igual a cero");
+        return;
+      }
+      parsedMinStock = parsed;
+    }
     let priceCents: number | undefined;
     if (price.trim().length > 0) {
       const parsedPrice = parseAmount(price);
@@ -298,10 +370,17 @@ function ItemForm({ onDone }: { onDone: () => void }) {
     setError(null);
     setIsSaving(true);
     try {
-      await createItem({ sku, name, stock: parsedStock, priceCents });
+      await createItem({
+        sku,
+        name,
+        stock: parsedStock,
+        minStock: parsedMinStock,
+        priceCents,
+      });
       setSku("");
       setName("");
       setStock("0");
+      setMinStock("");
       setPrice("");
       onDone();
     } catch (err: unknown) {
@@ -343,10 +422,10 @@ function ItemForm({ onDone }: { onDone: () => void }) {
           />
         </div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">
+      <div className="grid gap-3 sm:grid-cols-[6rem_6rem_1fr]">
         <div>
           <label htmlFor="new-item-stock" className={LABEL_CLASS}>
-            Stock
+            Stock inicial
           </label>
           <input
             id="new-item-stock"
@@ -357,8 +436,21 @@ function ItemForm({ onDone }: { onDone: () => void }) {
           />
         </div>
         <div>
+          <label htmlFor="new-item-min-stock" className={LABEL_CLASS}>
+            Mínimo alerta
+          </label>
+          <input
+            id="new-item-min-stock"
+            value={minStock}
+            onChange={(e) => setMinStock(e.target.value)}
+            inputMode="numeric"
+            placeholder="0"
+            className={INPUT_CLASS}
+          />
+        </div>
+        <div>
           <label htmlFor="new-item-price" className={LABEL_CLASS}>
-            Precio (opcional)
+            Precio venta (opcional)
           </label>
           <input
             id="new-item-price"

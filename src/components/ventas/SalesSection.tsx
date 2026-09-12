@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { EmptyState } from "~/components/ui/LedgerCard";
 import { formatMoney } from "~/lib/money";
+import { exportSaleReceiptPdf } from "~/lib/saleReceiptPdf";
 import { api } from "../../../convex/_generated/api";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
@@ -114,6 +115,7 @@ function SaleDetail({
   const [error, setError] = useState<string | null>(null);
   const [isCanceling, setIsCanceling] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleCancel = async () => {
     setIsCanceling(true);
@@ -129,6 +131,23 @@ function SaleDetail({
       );
     } finally {
       setIsCanceling(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!detail) return;
+    setIsExporting(true);
+    try {
+      await exportSaleReceiptPdf({
+        customerName: detail.customerName,
+        soldAt: detail.soldAt,
+        paymentType: detail.paymentType,
+        note: detail.note,
+        totalCents: detail.totalCents,
+        lines: detail.lines,
+      });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -172,41 +191,55 @@ function SaleDetail({
           {formatMoney(detail.marginCents)}
         </span>
       </p>
-      {!isCanceled ? (
-        <div className="mt-3 flex items-center justify-between gap-3 border-t border-line/60 pt-3">
-          {error ? <p className="text-xs text-debt">{error}</p> : <span />}
-          {confirming ? (
-            <span className="flex shrink-0 items-center gap-2">
-              <span className="text-xs text-ink-soft">
-                ¿Anular? Revierte stock y cobro.
+
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-line/60 pt-3">
+        <button
+          type="button"
+          onClick={() => void handleDownloadPdf()}
+          disabled={isExporting}
+          className="flex items-center gap-1.5 rounded-lg border border-line bg-card px-2.5 py-1 text-xs font-semibold text-ink transition hover:border-ink/40 disabled:opacity-50"
+        >
+          <span>📄</span> {isExporting ? "Generando…" : "Recibo PDF"}
+        </button>
+
+        {!isCanceled ? (
+          <div>
+            {error ? (
+              <p className="text-xs text-debt mr-2 inline">{error}</p>
+            ) : null}
+            {confirming ? (
+              <span className="flex shrink-0 items-center gap-2">
+                <span className="text-xs text-ink-soft">
+                  ¿Anular? Revierte stock y cobro.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setConfirming(false)}
+                  className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold transition-colors hover:border-ink/30"
+                >
+                  No
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCancel()}
+                  disabled={isCanceling}
+                  className="rounded-lg bg-debt px-3 py-1.5 text-xs font-semibold text-paper transition-opacity hover:opacity-85 disabled:opacity-50"
+                >
+                  {isCanceling ? "Anulando…" : "Sí, anular"}
+                </button>
               </span>
+            ) : (
               <button
                 type="button"
-                onClick={() => setConfirming(false)}
-                className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold transition-colors hover:border-ink/30"
+                onClick={() => setConfirming(true)}
+                className="text-xs font-semibold text-debt transition-opacity hover:opacity-75"
               >
-                No
+                Anular venta
               </button>
-              <button
-                type="button"
-                onClick={() => void handleCancel()}
-                disabled={isCanceling}
-                className="rounded-lg bg-debt px-3 py-1.5 text-xs font-semibold text-paper transition-opacity hover:opacity-85 disabled:opacity-50"
-              >
-                {isCanceling ? "Anulando…" : "Sí, anular"}
-              </button>
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              className="text-xs font-semibold text-debt transition-opacity hover:opacity-75"
-            >
-              Anular venta
-            </button>
-          )}
-        </div>
-      ) : null}
+            )}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

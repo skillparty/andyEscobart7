@@ -24,6 +24,8 @@ type VoiceAction =
   | "create_payable"
   | "create_receivable"
   | "create_account"
+  | "record_price"
+  | "add_shopping_item"
   | "query"
   | "unknown";
 
@@ -43,13 +45,13 @@ interface VoiceExecuteResult extends VoiceResult {
 // Prompt del sistema (en español)
 // ---------------------------------------------------------------------------
 
-const SYSTEM_PROMPT = `Eres un asistente financiero para una aplicación de gestión de gastos llamada "Cuentas Claras".
-El usuario te hablará en español sobre sus finanzas personales.
+const SYSTEM_PROMPT = `Eres un asistente financiero y de compras para una aplicación de gestión llamada "Cuentas Claras".
+El usuario te hablará en español sobre sus finanzas personales, compras cotidianas o la canasta familiar.
 
 Tu tarea es extraer datos estructurados del audio y devolver ÚNICAMENTE un objeto JSON válido (sin bloques de código, sin backticks, sin markdown). La respuesta debe seguir esta estructura exacta:
 
 {
-  "action": "create_payable" | "create_receivable" | "create_account" | "query" | "unknown",
+  "action": "create_payable" | "create_receivable" | "create_account" | "record_price" | "add_shopping_item" | "query" | "unknown",
   "data": { ... },
   "summary": "Breve confirmación en español de lo que entendiste",
   "confidence": 0.0 a 1.0
@@ -66,10 +68,16 @@ Reglas por tipo de acción:
 3. "create_account" — Cuando el usuario quiere crear/registrar una cuenta bancaria o de efectivo.
    data: { "name": string, "balance": number }
 
-4. "query" — Cuando el usuario hace una pregunta sobre sus finanzas.
+4. "record_price" — Cuando el usuario dice que COMPRÓ o PAGÓ por un producto o alimento (ej: "compré leche a 6 bolivianos", "pagué 28 por un maple de huevos en el mercado").
+   data: { "productName": string, "price": number, "quantity": number (opcional, default 1), "storeName": string (opcional) }
+
+5. "add_shopping_item" — Cuando el usuario dice que NECESITA comprar algo o quiere agregarlo a su lista de compras (ej: "anota comprar aceite", "agrega 2 kilos de tomate a la lista").
+   data: { "productName": string, "quantity": number (opcional, default 1) }
+
+6. "query" — Cuando el usuario hace una pregunta sobre sus finanzas, cuentas o precios de productos.
    data: { "question": string }
 
-5. "unknown" — Cuando no se entiende o no está relacionado con finanzas.
+7. "unknown" — Cuando no se entiende o no está relacionado con finanzas ni compras.
    data: {}
 
 Reglas generales:
@@ -222,10 +230,11 @@ async function answerFinancialQuery(
   ctx: ActionCtx,
   question: string,
 ): Promise<string> {
-  const [accounts, payables, receivables] = await Promise.all([
+  const [accounts, payables, receivables, priceAnalysis] = await Promise.all([
     ctx.runQuery(api.accounts.list, {}),
     ctx.runQuery(api.payables.list, {}),
     ctx.runQuery(api.receivables.list, {}),
+    ctx.runQuery(api.personal.prices.getAnalysis, {}),
   ]);
 
   const toBob = (cents: number) => (cents / 100).toFixed(2);
@@ -241,9 +250,18 @@ async function answerFinancialQuery(
       deudor: r.debtorName,
       monto: toBob(r.amount),
     })),
+    canastaPrecios: priceAnalysis.map((p) => ({
+      producto: p.productName,
+      ultimoPrecio:
+        p.latestPrice !== null ? toBob(p.latestPrice) : "sin registro",
+      promedio: p.avgPrice !== null ? toBob(p.avgPrice) : null,
+      temporadaActual: p.currentSeason,
+      recomendacion: p.recommendation.badge,
+      consejo: p.recommendation.advice,
+    })),
   };
 
-  const prompt = `Eres un asistente financiero de la app "Cuentas Claras". Responde en español, breve y claro (máximo 2 frases). Todos los montos están en bolivianos (BOB).
+  const prompt = `Eres un asistente financiero y de compras para "Cuentas Claras". Responde en español, breve y claro (máximo 2 frases). Todos los montos están en bolivianos (BOB). Si te preguntan por precios de productos de la canasta o si conviene comprar, consulta "canastaPrecios".
 
 Datos del usuario (JSON):
 ${JSON.stringify(context)}
@@ -422,6 +440,70 @@ export const processVoiceAndExecute = action({
             name,
             balance: Math.round(balance * 100),
           });
+          response.executed = true;
+          break;
+        }
+
+        case "record_price": {
+          const productName = (data.productName as string)?.trim();
+          const price = Number(data.price);
+          const quantity = Number(data.quantity) || 1;
+          const storeName = (data.storeName as string)?.trim();
+
+          if (!productName || !Number.isFinite(price) || price <= 0) {
+            response.error = "Faltan datos del producto o precio.";
+            return response;
+          }
+
+          const products = await ctx.runQuery(api.personal.products.list, {});
+          const product = products.find(
+            (p) => p.name.toLowerCase() === productName.toLowerCase(),
+          );
+
+          let productId = product?._id;
+          if (!productId) {
+            productId = await ctx.runMutation(api.personal.products.create, {
+              name: productName,
+              category: "General",
+              unit: "unidad",
+            });
+          }
+
+          await ctx.runMutation(api.personal.prices.create, {
+            productId,
+            priceCents: Math.round(price * 100),
+            quantity,
+            purchasedAt: Date.now(),
+            storeName: storeName || undefined,
+          });
+
+          response.executed = true;
+          break;
+        }
+
+        case "add_shopping_item": {
+          const productName = (data.productName as string)?.trim();
+          const quantity = Number(data.quantity) || 1;
+
+          if (!productName) {
+            response.error = "Falta el nombre del producto.";
+            return response;
+          }
+
+          const products = await ctx.runQuery(api.personal.products.list, {});
+          const product = products.find(
+            (p) =>
+              p.name.toLowerCase().includes(productName.toLowerCase()) ||
+              productName.toLowerCase().includes(p.name.toLowerCase()),
+          );
+
+          await ctx.runMutation(api.personal.shoppingList.add, {
+            productId: product?._id,
+            customName: product ? undefined : productName,
+            targetQuantity: quantity,
+            unit: product?.unit,
+          });
+
           response.executed = true;
           break;
         }

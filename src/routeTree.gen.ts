@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VentasRouteImport } from './routes/ventas'
+import { Route as PreciosRouteImport } from './routes/precios'
 import { Route as KardexRouteImport } from './routes/kardex'
 import { Route as InventarioRouteImport } from './routes/inventario'
 import { Route as ComprasRouteImport } from './routes/compras'
@@ -18,6 +19,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const VentasRoute = VentasRouteImport.update({
   id: '/ventas',
   path: '/ventas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreciosRoute = PreciosRouteImport.update({
+  id: '/precios',
+  path: '/precios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KardexRoute = KardexRouteImport.update({
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/compras': typeof ComprasRoute
   '/inventario': typeof InventarioRoute
   '/kardex': typeof KardexRoute
+  '/precios': typeof PreciosRoute
   '/ventas': typeof VentasRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/compras': typeof ComprasRoute
   '/inventario': typeof InventarioRoute
   '/kardex': typeof KardexRoute
+  '/precios': typeof PreciosRoute
   '/ventas': typeof VentasRoute
 }
 export interface FileRoutesById {
@@ -61,14 +69,28 @@ export interface FileRoutesById {
   '/compras': typeof ComprasRoute
   '/inventario': typeof InventarioRoute
   '/kardex': typeof KardexRoute
+  '/precios': typeof PreciosRoute
   '/ventas': typeof VentasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/compras' | '/inventario' | '/kardex' | '/ventas'
+  fullPaths:
+    | '/'
+    | '/compras'
+    | '/inventario'
+    | '/kardex'
+    | '/precios'
+    | '/ventas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/compras' | '/inventario' | '/kardex' | '/ventas'
-  id: '__root__' | '/' | '/compras' | '/inventario' | '/kardex' | '/ventas'
+  to: '/' | '/compras' | '/inventario' | '/kardex' | '/precios' | '/ventas'
+  id:
+    | '__root__'
+    | '/'
+    | '/compras'
+    | '/inventario'
+    | '/kardex'
+    | '/precios'
+    | '/ventas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,6 +98,7 @@ export interface RootRouteChildren {
   ComprasRoute: typeof ComprasRoute
   InventarioRoute: typeof InventarioRoute
   KardexRoute: typeof KardexRoute
+  PreciosRoute: typeof PreciosRoute
   VentasRoute: typeof VentasRoute
 }
 
@@ -86,6 +109,13 @@ declare module '@tanstack/react-router' {
       path: '/ventas'
       fullPath: '/ventas'
       preLoaderRoute: typeof VentasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/precios': {
+      id: '/precios'
+      path: '/precios'
+      fullPath: '/precios'
+      preLoaderRoute: typeof PreciosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kardex': {
@@ -124,6 +154,7 @@ const rootRouteChildren: RootRouteChildren = {
   ComprasRoute: ComprasRoute,
   InventarioRoute: InventarioRoute,
   KardexRoute: KardexRoute,
+  PreciosRoute: PreciosRoute,
   VentasRoute: VentasRoute,
 }
 export const routeTree = rootRouteImport

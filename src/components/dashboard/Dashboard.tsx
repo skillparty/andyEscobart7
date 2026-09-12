@@ -8,6 +8,7 @@ import { AccountsSection } from "./AccountsSection";
 import { HeroPanel } from "./HeroPanel";
 import { HistorySection } from "./HistorySection";
 import { PayablesSection } from "./PayablesSection";
+import { PriceOpportunitiesWidget } from "./PriceOpportunitiesWidget";
 import { ReceivablesSection } from "./ReceivablesSection";
 import { VoiceAssistant } from "./VoiceAssistant";
 
@@ -90,6 +91,7 @@ export function Dashboard() {
                 monthlyData={monthlyData}
               />
             </Suspense>
+            <PriceOpportunitiesWidget />
             <ReceivablesSection receivables={receivables} accounts={accounts} />
             <PayablesSection payables={payables} accounts={accounts} />
           </div>

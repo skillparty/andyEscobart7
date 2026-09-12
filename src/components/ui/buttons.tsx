@@ -4,17 +4,25 @@ interface RowButtonProps {
   type: "button" | "submit";
   label: string;
   onClick?: () => void;
+  disabled?: boolean;
   children: React.ReactNode;
 }
 
-export function RowButton({ type, label, onClick, children }: RowButtonProps) {
+export function RowButton({
+  type,
+  label,
+  onClick,
+  disabled,
+  children,
+}: RowButtonProps) {
   return (
     <button
       type={type}
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
       title={label}
-      className="grid size-7 place-items-center rounded-md border border-line text-xs text-ink-soft transition-colors duration-150 hover:border-ink/30 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ink"
+      className="grid size-7 place-items-center rounded-md border border-line text-xs text-ink-soft transition-colors duration-150 hover:border-ink/30 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ink disabled:opacity-50"
     >
       {children}
     </button>

@@ -185,6 +185,67 @@ describe("voiceAI.processVoiceAndExecute — privacidad", () => {
     const blob = await t.run(async (ctx) => ctx.storage.get(storageId));
     expect(blob).toBeNull();
   });
+
+  test("ejecuta record_price y crea el producto y registro de precio", async () => {
+    const t = convexTest(schema, modules);
+    const { as } = await withUser(t);
+
+    mockGemini({
+      structured: {
+        action: "record_price",
+        data: {
+          productName: "Aceite Fino",
+          price: 13.5,
+          quantity: 1,
+          storeName: "Mercado Central",
+        },
+        summary: "Compraste Aceite Fino a 13.50 Bs en Mercado Central",
+        confidence: 0.92,
+      },
+    });
+
+    const storageId = await storeAudio(t);
+    const res = await as.action(api.voiceAI.processVoiceAndExecute, {
+      storageId,
+    });
+    expect(res.executed).toBe(true);
+
+    const products = await as.query(api.personal.products.list, {});
+    expect(products).toHaveLength(1);
+    expect(products[0].name).toBe("Aceite Fino");
+
+    const analysis = await as.query(api.personal.prices.getAnalysis, {});
+    expect(analysis).toHaveLength(1);
+    expect(analysis[0].latestPrice).toBe(1350);
+  });
+
+  test("ejecuta add_shopping_item y lo añade a la lista de compras", async () => {
+    const t = convexTest(schema, modules);
+    const { as } = await withUser(t);
+
+    mockGemini({
+      structured: {
+        action: "add_shopping_item",
+        data: {
+          productName: "Tomates",
+          quantity: 2,
+        },
+        summary: "Anoté comprar 2 de Tomates en tu lista",
+        confidence: 0.89,
+      },
+    });
+
+    const storageId = await storeAudio(t);
+    const res = await as.action(api.voiceAI.processVoiceAndExecute, {
+      storageId,
+    });
+    expect(res.executed).toBe(true);
+
+    const list = await as.query(api.personal.shoppingList.list, {});
+    expect(list).toHaveLength(1);
+    expect(list[0].name).toBe("Tomates");
+    expect(list[0].targetQuantity).toBe(2);
+  });
 });
 
 describe("voiceAI.processVoice — solo transcripción", () => {

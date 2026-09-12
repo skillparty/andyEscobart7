@@ -151,7 +151,9 @@ export function VoiceAssistant() {
     });
 
     // Stop the media stream and release the audio context
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((t) => {
+      t.stop();
+    });
     streamRef.current = null;
     void audioCtxRef.current?.close();
     audioCtxRef.current = null;
@@ -194,14 +196,16 @@ export function VoiceAssistant() {
       );
       setPhase("error");
     }
-  }, [processVoice]);
+  }, [processVoice, generateUploadUrl]);
 
   // ── Cleanup on unmount ──────────────────────────────────────────────────
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       cancelAnimationFrame(animFrameRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach((t) => {
+        t.stop();
+      });
       void audioCtxRef.current?.close();
       audioCtxRef.current = null;
     };
@@ -211,7 +215,9 @@ export function VoiceAssistant() {
   const close = useCallback(() => {
     if (phase === "recording") {
       mediaRecorderRef.current?.stop();
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach((t) => {
+        t.stop();
+      });
       streamRef.current = null;
       void audioCtxRef.current?.close();
       audioCtxRef.current = null;
@@ -327,6 +333,7 @@ export function VoiceAssistant() {
                 <div className="voice-waveform" aria-hidden="true">
                   {audioLevels.map((level, i) => (
                     <div
+                      // biome-ignore lint/suspicious/noArrayIndexKey: fixed-size audio visualizer slots
                       key={`bar-${i}`}
                       className="voice-bar"
                       style={{

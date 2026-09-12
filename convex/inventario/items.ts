@@ -24,6 +24,7 @@ export const create = mutation({
     name: v.string(),
     stock: v.number(),
     priceCents: v.optional(v.number()),
+    minStock: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
@@ -37,6 +38,14 @@ export const create = mutation({
     }
     if (!Number.isInteger(args.stock) || args.stock < 0) {
       throw new Error("El stock debe ser un entero mayor o igual a cero");
+    }
+    if (
+      args.minStock !== undefined &&
+      (!Number.isInteger(args.minStock) || args.minStock < 0)
+    ) {
+      throw new Error(
+        "El stock mínimo debe ser un entero mayor o igual a cero",
+      );
     }
     if (args.priceCents !== undefined) {
       assertBalanceCents(args.priceCents, "El precio");
@@ -58,6 +67,7 @@ export const create = mutation({
       name,
       stock: 0,
       priceCents: args.priceCents,
+      minStock: args.minStock,
     });
 
     if (args.stock > 0) {
@@ -84,6 +94,7 @@ export const update = mutation({
     name: v.optional(v.string()),
     stock: v.optional(v.number()),
     priceCents: v.optional(v.number()),
+    minStock: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
@@ -92,7 +103,11 @@ export const update = mutation({
       throw new Error("Repuesto no encontrado");
     }
 
-    const patch: Partial<{ name: string; priceCents: number }> = {};
+    const patch: Partial<{
+      name: string;
+      priceCents: number;
+      minStock: number;
+    }> = {};
     if (args.name !== undefined) {
       const name = normalizeText(args.name);
       if (name.length === 0) {
@@ -104,6 +119,14 @@ export const update = mutation({
       if (!Number.isInteger(args.stock) || args.stock < 0) {
         throw new Error("El stock debe ser un entero mayor o igual a cero");
       }
+    }
+    if (args.minStock !== undefined) {
+      if (!Number.isInteger(args.minStock) || args.minStock < 0) {
+        throw new Error(
+          "El stock mínimo debe ser un entero mayor o igual a cero",
+        );
+      }
+      patch.minStock = args.minStock;
     }
     if (args.priceCents !== undefined) {
       assertBalanceCents(args.priceCents, "El precio");
@@ -149,5 +172,24 @@ export const remove = mutation({
     }
     // Soft delete: se conserva para no romper el historial de compatibilidad.
     await ctx.db.patch(args.id, { archivedAt: Date.now() });
+  },
+});
+
+export const listLowStock = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireUserId(ctx);
+    const items = await ctx.db
+      .query("items")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    return items.filter(
+      (item) =>
+        item.archivedAt === undefined &&
+        item.minStock !== undefined &&
+        item.minStock > 0 &&
+        item.stock <= item.minStock,
+    );
   },
 });

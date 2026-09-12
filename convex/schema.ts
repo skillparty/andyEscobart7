@@ -68,6 +68,8 @@ export default defineSchema({
     // valueCents / stock en vez de almacenarse, para no acumular error de
     // redondeo al recalcular un promedio sobre otro promedio.
     valueCents: v.optional(v.number()),
+    // Umbral de alerta de stock mínimo / reposición.
+    minStock: v.optional(v.number()),
     archivedAt: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
@@ -222,4 +224,54 @@ export default defineSchema({
   })
     .index("by_sale", ["saleId"])
     .index("by_item_and_soldAt", ["itemId", "soldAt"]),
+
+  // Módulo Finanzas Personales: canasta de productos familiares/habituales
+  // y rastreador de precios por fecha/temporada para sugerir cuándo comprar.
+  personalProducts: defineTable({
+    userId: v.id("users"),
+    name: v.string(),
+    category: v.string(),
+    unit: v.string(),
+    isPreloaded: v.optional(v.boolean()),
+    archivedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_name", ["userId", "name"])
+    .searchIndex("search_name", {
+      searchField: "name",
+      filterFields: ["userId"],
+    }),
+
+  personalPriceRecords: defineTable({
+    userId: v.id("users"),
+    productId: v.id("personalProducts"),
+    priceCents: v.number(),
+    quantity: v.optional(v.number()),
+    totalCents: v.optional(v.number()),
+    purchasedAt: v.number(),
+    storeName: v.optional(v.string()),
+    season: v.string(),
+    accountId: v.optional(v.id("accounts")),
+    transactionId: v.optional(v.id("transactions")),
+    note: v.optional(v.string()),
+    archivedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_product", ["productId"])
+    .index("by_product_and_purchasedAt", ["productId", "purchasedAt"])
+    .index("by_user_and_purchasedAt", ["userId", "purchasedAt"]),
+
+  // Lista inteligente de compras para la canasta del hogar
+  shoppingList: defineTable({
+    userId: v.id("users"),
+    productId: v.optional(v.id("personalProducts")),
+    customName: v.optional(v.string()),
+    targetQuantity: v.optional(v.number()),
+    unit: v.optional(v.string()),
+    isCompleted: v.boolean(),
+    completedAt: v.optional(v.number()),
+    notes: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_completed", ["userId", "isCompleted"]),
 });

@@ -22,7 +22,7 @@ function getConvexUrl(): string {
   if (typeof window === "undefined") {
     const runtimeUrl =
       typeof process !== "undefined"
-        ? process.env.VITE_CONVEX_URL ?? process.env.CONVEX_URL
+        ? (process.env.VITE_CONVEX_URL ?? process.env.CONVEX_URL)
         : undefined;
     if (runtimeUrl) {
       url = runtimeUrl;
