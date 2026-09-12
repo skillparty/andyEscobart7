@@ -57,27 +57,81 @@ export function getRouter() {
       context: { queryClient },
       scrollRestoration: true,
       defaultPreloadStaleTime: 0,
-      defaultErrorComponent: () => (
-        <div
-          style={{
-            display: "grid",
-            minHeight: "100dvh",
-            placeItems: "center",
-            padding: "2rem",
-            fontFamily: "Inter, system-ui, sans-serif",
-            textAlign: "center",
-          }}
-        >
-          <div>
-            <p style={{ fontSize: "1.125rem", fontWeight: 600 }}>
-              Algo salió mal
-            </p>
-            <p style={{ marginTop: "0.5rem", color: "#777" }}>
-              Intenta recargar la página.
-            </p>
+      defaultErrorComponent: ({ error, reset }) => {
+        if (typeof window !== "undefined") {
+          console.error("[Router Error]", error);
+        }
+        return (
+          <div
+            style={{
+              display: "grid",
+              minHeight: "100dvh",
+              placeItems: "center",
+              padding: "2rem",
+              fontFamily: "Inter, system-ui, sans-serif",
+              textAlign: "center",
+            }}
+          >
+            <div>
+              <p style={{ fontSize: "1.25rem", fontWeight: 700 }}>
+                Algo salió mal
+              </p>
+              <p
+                style={{
+                  marginTop: "0.5rem",
+                  color: "#666",
+                  fontSize: "0.875rem",
+                  maxWidth: "28rem",
+                  wordBreak: "break-word",
+                }}
+              >
+                {error instanceof Error
+                  ? error.message
+                  : "Intenta recargar la página."}
+              </p>
+              <div
+                style={{
+                  marginTop: "1.25rem",
+                  display: "flex",
+                  gap: "0.5rem",
+                  justifyContent: "center",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => (reset ? reset() : window.location.reload())}
+                  style={{
+                    padding: "0.5rem 1rem",
+                    borderRadius: "0.5rem",
+                    backgroundColor: "#1c1917",
+                    color: "#fff",
+                    border: "none",
+                    fontSize: "0.8125rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Reintentar
+                </button>
+                <a
+                  href="/"
+                  style={{
+                    padding: "0.5rem 1rem",
+                    borderRadius: "0.5rem",
+                    backgroundColor: "#e7e5e4",
+                    color: "#1c1917",
+                    textDecoration: "none",
+                    fontSize: "0.8125rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  Ir al inicio
+                </a>
+              </div>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
       defaultNotFoundComponent: () => (
         <div
           style={{

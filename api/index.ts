@@ -42,6 +42,23 @@ export default async function ssr(req: any, res: any): Promise<void> {
     console.error("[SSR Error]", error);
     res.statusCode = 200;
     res.setHeader("Content-Type", "text/html; charset=utf-8");
+
+    let clientScript = "";
+    try {
+      const fs = await import("node:fs");
+      const path = await import("node:path");
+      const assetsDir = path.resolve(process.cwd(), "dist/client/assets");
+      const files = fs.readdirSync(assetsDir);
+      const main = files.find(
+        (f) => f.startsWith("index-") && f.endsWith(".js"),
+      );
+      if (main) {
+        clientScript = `<script type="module" src="/assets/${main}"></script>`;
+      }
+    } catch {
+      // Si no se puede leer, continuar sin script
+    }
+
     res.end(`<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -61,7 +78,7 @@ export default async function ssr(req: any, res: any): Promise<void> {
   <div id="root">
     <div class="loading"><p>Cargando…</p></div>
   </div>
-  <script type="module" src="/assets/index-DEfWly6j.js"></script>
+  ${clientScript}
 </body>
 </html>`);
   }
